@@ -1,7 +1,11 @@
 package ru.nsu.diff.engine
 
-class Comparator {
-    fun compare() {
+import com.intellij.psi.PsiElement
 
+class Comparator {
+    companion object {
+        fun compare(root1: PsiElement, root2: PsiElement) : DiffResult {
+            return DiffResult()
+        }
     }
 }
