@@ -2,26 +2,31 @@ package ru.nsu.diff.view
 
 import com.intellij.openapi.ui.Messages
 
-const val NO_FILES_MSG_CODE = 0
-const val DIFFERENT_TYPES_MSG_CODE = 1
+enum class DiffMessageType(val code: Int) {
+    NO_FILES(0),
+    INVALID_TYPE(1), // TODO
+    DIFFERENT_TYPES(2)
+}
 
-class DiffViewerNotifier {
-    companion object {
-        fun showDialog(msgCode: Int) {
-            var msg = ""
-            var title = ""
+object DiffViewerNotifier {
+    fun showDialog(msgCode: DiffMessageType) {
+        var msg = ""
+        var title = ""
 
-            when (msgCode) {
-                NO_FILES_MSG_CODE -> {
-                    msg = "Specify both files to view diff"
-                    title = "Select files"
-                }
-                DIFFERENT_TYPES_MSG_CODE -> {
-                    msg = "Select files with the same file type"
-                    title = "Different file types"
-                }
+        when (msgCode) {
+            DiffMessageType.NO_FILES -> {
+                msg = "Specify both files to view diff"
+                title = "Select files"
             }
-            Messages.showMessageDialog(msg, title, Messages.getWarningIcon())
+            DiffMessageType.INVALID_TYPE -> {
+                msg = "Invalid"
+                title = "Invalid file type"
+            }
+            DiffMessageType.DIFFERENT_TYPES -> {
+                msg = "Select files with the same file type"
+                title = "Different file types"
+            }
         }
+        Messages.showMessageDialog(msg, title, Messages.getWarningIcon())
     }
 }

@@ -7,13 +7,14 @@ import com.intellij.psi.PsiFileFactory
 import java.awt.Dimension
 import javax.swing.JPanel
 
-import ru.nsu.diff.engine.Comparator
-import ru.nsu.diff.engine.DiffResult
+import ru.nsu.diff.engine.Diff
+import ru.nsu.diff.engine.transforming.EditScript
 
 private const val VIEWER_PANEL_WIDTH = 700
 private const val VIEWER_PANEL_HEIGHT = 300
 
 class DiffViewerPanel(private val project: Project) : JPanel() {
+
     var firstFile: VirtualFile? = null
     var secondFile: VirtualFile? = null
 
@@ -23,14 +24,14 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
 
     fun showResult() {
         if (firstFile == null || secondFile == null) {
-            DiffViewerNotifier.showDialog(NO_FILES_MSG_CODE)
+            DiffViewerNotifier.showDialog(DiffMessageType.NO_FILES)
             return
         }
 
         val firstFileType = firstFile!!.fileType
         val secondFileType = secondFile!!.fileType
         if (firstFileType != secondFileType) {
-            DiffViewerNotifier.showDialog(DIFFERENT_TYPES_MSG_CODE)
+            DiffViewerNotifier.showDialog(DiffMessageType.DIFFERENT_TYPES)
             return
         }
 
@@ -47,11 +48,10 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
                 .getInstance(project)
                 .createFileFromText("Second.$secondFileExtension", secondFileType, secondFileContent)
 
-        val diffResult = Comparator.compare(firstPsi, secondPsi)
-        diffResult.render()
+        Diff.diff(firstPsi, secondPsi).render()
     }
 
-    private fun DiffResult.render() {
+    private fun EditScript.render() {
         // TODO: create component and add
     }
 }

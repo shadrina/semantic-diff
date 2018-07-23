@@ -8,8 +8,8 @@ import java.awt.GridBagLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
 
-
 class MainDialog(private val project: Project) : DialogWrapper(project, true, IdeModalityType.MODELESS) {
+
     private val diffViewerPanel = DiffViewerPanel(project)
     private val fileInputPanel = FileInputPanel(project, diffViewerPanel)
 
