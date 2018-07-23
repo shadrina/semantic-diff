@@ -15,7 +15,7 @@ import javax.swing.JTextField
 
 private const val FILE_CHOOSER_WIDTH = 35
 
-class FileInputPanel(val project: Project) : JPanel() {
+class FileInputPanel(val project: Project, val viewerPanel: DiffViewerPanel) : JPanel() {
 
     private val firstFileChooser: TextFieldWithBrowseButton = TextFieldWithBrowseButton()
     private val secondFileChooser: TextFieldWithBrowseButton = TextFieldWithBrowseButton()
@@ -23,11 +23,17 @@ class FileInputPanel(val project: Project) : JPanel() {
     init {
         firstFileChooser.addBrowseFolderListener(
                 project,
-                generateBrowseActionListener("Select first file", firstFileChooser)
+                generateBrowseActionListener(
+                        "Select first file",
+                        firstFileChooser
+                ) { viewerPanel.firstFile = it }
         )
         secondFileChooser.addBrowseFolderListener(
                 project,
-                generateBrowseActionListener("Select second file", secondFileChooser)
+                generateBrowseActionListener(
+                        "Select second file",
+                        secondFileChooser
+                ) { viewerPanel.secondFile = it }
         )
 
         firstFileChooser.setTextFieldPreferredWidth(FILE_CHOOSER_WIDTH)
@@ -52,8 +58,11 @@ class FileInputPanel(val project: Project) : JPanel() {
         add(secondFileChooser, gc)
     }
 
-    private fun generateBrowseActionListener(title: String, fileChooser: TextFieldWithBrowseButton)
-            : ComponentWithBrowseButton.BrowseFolderActionListener<JTextField> {
+    private fun generateBrowseActionListener(
+            title: String,
+            fileChooser: TextFieldWithBrowseButton,
+            onFileChosen: (VirtualFile) -> Unit
+    ) : ComponentWithBrowseButton.BrowseFolderActionListener<JTextField> {
 
         val singleFileDescriptor = FileChooserDescriptorFactory.createSingleFileNoJarsDescriptor()
         return object : ComponentWithBrowseButton.BrowseFolderActionListener<JTextField>(
@@ -66,7 +75,7 @@ class FileInputPanel(val project: Project) : JPanel() {
         ) {
             override fun onFileChosen(chosenFile: VirtualFile) {
                 super.onFileChosen(chosenFile)
-                TODO("generate PSI for the file")
+                onFileChosen(chosenFile)
             }
         }
     }

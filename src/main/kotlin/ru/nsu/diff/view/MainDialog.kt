@@ -2,13 +2,17 @@ package ru.nsu.diff.view
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
+import java.awt.GridBagConstraints
+import java.awt.GridBagLayout
 
-import java.awt.GridLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
 
 
 class MainDialog(private val project: Project) : DialogWrapper(project, true, IdeModalityType.MODELESS) {
+    private val diffViewerPanel = DiffViewerPanel(project)
+    private val fileInputPanel = FileInputPanel(project, diffViewerPanel)
+
     init {
         init()
         title = "Semantic diff"
@@ -17,14 +21,19 @@ class MainDialog(private val project: Project) : DialogWrapper(project, true, Id
     }
 
     override fun createCenterPanel(): JComponent? {
-        val panel = JPanel(GridLayout(2, 1))
-        panel.add(FileInputPanel(project))
-        panel.add(DiffViewerPanel())
+        val panel = JPanel(GridBagLayout())
+
+        val gc = GridBagConstraints()
+        gc.gridx = 0
+        gc.gridy = 0
+        panel.add(fileInputPanel, gc)
+        gc.gridy = 1
+        panel.add(diffViewerPanel, gc)
 
         return panel
     }
 
     override fun doOKAction() {
-        TODO("do diff")
+        diffViewerPanel.showResult()
     }
 }
