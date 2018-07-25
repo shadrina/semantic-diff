@@ -28,7 +28,7 @@ class MainDialog(private val project: Project) : DialogWrapper(project, true, Id
         gc.gridy = 0
         panel.add(fileInputPanel, gc)
         gc.gridy = 1
-        panel.add(diffViewerPanel, gc)
+        // panel.add(diffViewerPanel, gc)
 
         return panel
     }

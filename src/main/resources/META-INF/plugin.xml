@@ -13,10 +13,7 @@
     ]]></change-notes>
 
     <depends>com.intellij.modules.lang</depends>
-
-    <extensions defaultExtensionNs="com.intellij">
-        <!-- Add your extensions here -->
-    </extensions>
+    <depends>org.jetbrains.kotlin</depends>
 
     <actions>
         <action id="SemanticDiffPlugin.UseDiff" class="ru.nsu.diff.UseDiffToolAction" text="Semantic diff..."

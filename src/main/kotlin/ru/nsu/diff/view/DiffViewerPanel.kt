@@ -3,6 +3,7 @@ package ru.nsu.diff.view
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFileFactory
+import com.intellij.psi.PsiManager
 
 import java.awt.Dimension
 import javax.swing.JPanel
@@ -27,26 +28,16 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
             DiffViewerNotifier.showDialog(DiffMessageType.NO_FILES)
             return
         }
-
-        val firstFileType = firstFile!!.fileType
-        val secondFileType = secondFile!!.fileType
-        if (firstFileType != secondFileType) {
+        if (firstFile!!.fileType != secondFile!!.fileType) {
             DiffViewerNotifier.showDialog(DiffMessageType.DIFFERENT_TYPES)
             return
         }
-
-        val firstFileExtension = firstFile!!.extension
-        val secondFileExtension = secondFile!!.extension
-
-        val firstFileContent = firstFile!!.inputStream.bufferedReader().readText()
-        val secondFileContent = secondFile!!.inputStream.bufferedReader().readText()
-
-        val firstPsi = PsiFileFactory
-                .getInstance(project)
-                .createFileFromText("First.$firstFileExtension", firstFileType, firstFileContent)
-        val secondPsi = PsiFileFactory
-                .getInstance(project)
-                .createFileFromText("Second.$secondFileExtension", secondFileType, secondFileContent)
+        val firstPsi = PsiManager.getInstance(project).findFile(firstFile!!)?.originalElement
+        val secondPsi = PsiManager.getInstance(project).findFile(secondFile!!)?.originalElement
+        if (firstPsi == null || secondPsi == null) {
+            DiffViewerNotifier.showDialog(DiffMessageType.UNABLE_TO_DIFF)
+            return
+        }
 
         Diff.diff(firstPsi, secondPsi).render()
     }
