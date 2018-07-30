@@ -1,9 +1,10 @@
 package ru.nsu.diff.engine.util
 
 class BinaryRelation<T> {
-    private val pairs: MutableList<Pair<T, T>> = mutableListOf()
+    val pairs: MutableList<Pair<T, T>> = mutableListOf()
 
     fun add(x: T, y: T) = pairs.add(Pair(x, y))
+    fun add(p: Pair<T, T>) = pairs.add(p)
     fun getPartner(x: T) : T? {
         var result: T? = null
         pairs.forEach {
@@ -12,6 +13,6 @@ class BinaryRelation<T> {
         }
         return result
     }
-    fun containsElementWithPairOf(x: T) : Boolean = pairs.any { it.first === x || it.second === x }
-    fun containsElement(pair: Pair<T, T>) = pairs.contains(pair)
+    fun containsPairFor(x: T) : Boolean = pairs.any { it.first === x || it.second === x }
+    fun contains(pair: Pair<T, T>) = pairs.contains(pair)
 }
