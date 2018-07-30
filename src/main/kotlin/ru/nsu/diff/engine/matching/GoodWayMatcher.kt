@@ -2,6 +2,7 @@ package ru.nsu.diff.engine.matching
 
 import com.intellij.lang.ASTNode
 import com.intellij.psi.PsiElement
+
 import ru.nsu.diff.engine.util.BinaryRelation
 import ru.nsu.diff.engine.util.LongestCommonSubsequence
 import ru.nsu.diff.engine.util.Queue
@@ -13,13 +14,8 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<PsiElement>) : M
         val children1 = root1.childrenListInBfsReverseOrder().reversed()
         val children2 = root2.childrenListInBfsReverseOrder().reversed()
 
-        val leafs1 = children1.filter { it.isLeaf() }
-        val leafs2 = children2.filter { it.isLeaf() }
-        fastMatch(leafs1, leafs2)
-
-        val noLeafs1 = children1.filter { !it.isLeaf() }
-        val noLeafs2 = children2.filter { !it.isLeaf() }
-        fastMatch(noLeafs1, noLeafs2)
+        fastMatch(children1.filter { it.isLeaf() }, children2.filter { it.isLeaf() })
+        fastMatch(children1.filter { !it.isLeaf() }, children2.filter { !it.isLeaf() })
     }
 
     /**
@@ -44,8 +40,6 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<PsiElement>) : M
             return x.label() == y.label() && x.value() == y.value()
         }
         val max = maxOf(x.nodesNumber(), y.nodesNumber())
-
-        val value = common(x, y) * 1.0 / max
         return x.label() == y.label() && common(x, y) * 1.0 / max > equalParameterT
     }
 

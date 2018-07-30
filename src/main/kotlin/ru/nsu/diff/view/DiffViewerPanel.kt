@@ -39,10 +39,11 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
             return
         }
 
-        Diff.diff(firstPsi, secondPsi).render()
+        Diff.diff(firstPsi.copy(), secondPsi.copy()).render()
     }
 
     private fun EditScript.render() {
         // TODO: create component and add
+        println(this)
     }
 }
