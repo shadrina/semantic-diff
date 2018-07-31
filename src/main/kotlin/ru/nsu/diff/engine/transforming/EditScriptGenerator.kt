@@ -1,33 +1,34 @@
 package ru.nsu.diff.engine.transforming
 
-import com.intellij.psi.PsiElement
-
 import ru.nsu.diff.engine.transforming.EditOperationType.*
+import ru.nsu.diff.engine.util.DeltaTreeElement
 import ru.nsu.diff.engine.util.InputTuple
 import ru.nsu.diff.engine.util.LongestCommonSubsequence
 import ru.nsu.diff.engine.util.Queue
 
 object EditScriptGenerator {
     private lateinit var inputTuple: InputTuple
-    private val script = EditScript()
+    private lateinit var script: EditScript
 
     fun generateScript(inputTuple: InputTuple) : EditScript {
+        this.script = EditScript()
         this.inputTuple = inputTuple
 
-        val queue = Queue<PsiElement>()
+        val queue = Queue<DeltaTreeElement>()
         queue.enqueue(inputTuple.T2)
         bfs(queue, mutableListOf())
+        inputTuple.T1.deleteRedundant()
 
         return script
     }
 
-    private fun bfs(queue: Queue<PsiElement>, visited: MutableList<PsiElement>) {
-        // while (!queue.isEmpty()) {
+    private fun bfs(queue: Queue<DeltaTreeElement>, visited: MutableList<DeltaTreeElement>) {
+        while (!queue.isEmpty()) {
             val curr = queue.dequeue() ?: return
             visited.add(curr)
             curr.children.forEach { queue.enqueue(it) }
 
-            val currParent = curr.node.treeParent?.psi
+            val currParent = curr.parent
             var partner = inputTuple.binaryRelation.getPartner(curr)
 
             // Insert-phase
@@ -37,24 +38,58 @@ object EditScriptGenerator {
                 val insertOperation = EditOperation(INSERT, newNode, dstNode, curr.findPosition())
                 script.addAndPerform(insertOperation)
                 partner = newNode
-            }
+                matchAllNodes(newNode, curr)
+
             // Move-phase
-            if (partner != null && currParent != null) {
-                val partnerParent = partner.node.treeParent.psi
-                val moveOperation = EditOperation(MOVE, curr, partnerParent, curr.findPosition())
-                script.addAndPerform(moveOperation)
+            } else if (partner != null && currParent != null) {
+                val partnerParent = partner.parent
+                if (partnerParent != null && !inputTuple.binaryRelation.contains(Pair(partnerParent, currParent))) {
+                    val moveOperation = EditOperation(MOVE, partner, partnerParent, curr.findPosition())
+                    script.addAndPerform(moveOperation)
+                }
             }
             // Align-phase
             alignChildren(partner!!, curr)
-        // }
+        }
     }
 
-    private fun PsiElement.findPosition() : Int = this.node.treeParent?.psi?.children?.indexOf(this) ?: 0
+    private fun DeltaTreeElement.deleteRedundant() {
+        val deleteOps = mutableListOf<EditOperation>()
+        this.children.forEach {
+            if (!inputTuple.binaryRelation.containsPairFor(it)) {
+                val deleteOperation = EditOperation(DELETE, it, null, null)
+                deleteOps.add(deleteOperation)
+            } else it.deleteRedundant()
+        }
+        deleteOps.forEach {
+            script.addAndPerform(it)
+        }
+    }
 
-    private fun alignChildren(elem1: PsiElement, elem2: PsiElement) {
-        val matched1 = mutableListOf<PsiElement>()
-        val matched2 = mutableListOf<PsiElement>()
+    private fun matchAllNodes(x: DeltaTreeElement, y: DeltaTreeElement) {
+        inputTuple.binaryRelation.add(x, y)
 
+        var index = 0
+        var nextChildX = x.children.getOrNull(index)
+        var nextChildY = y.children.getOrNull(index)
+        while (nextChildX != null && nextChildY != null) {
+            matchAllNodes(nextChildX, nextChildY)
+
+            index++
+            nextChildX = x.children.getOrNull(index)
+            nextChildY = y.children.getOrNull(index)
+        }
+    }
+
+    private fun DeltaTreeElement.copy() : DeltaTreeElement {
+        val newDelta = DeltaTreeElement(this.type, this.text)
+        this.children.forEach { newDelta.addChild(it.copy()) }
+        return newDelta
+    }
+
+    private fun DeltaTreeElement.findPosition() : Int = this.parent?.indexOf(this) ?: 0
+
+    private fun alignChildren(elem1: DeltaTreeElement, elem2: DeltaTreeElement) {
         val S1 = elem1.children.filter { inputTuple.binaryRelation.containsPairFor(it) }
         val S2 = elem2.children.filter { inputTuple.binaryRelation.containsPairFor(it) }
         val S = LongestCommonSubsequence.find(
@@ -62,16 +97,13 @@ object EditScriptGenerator {
                 S2,
                 fun (x, y) = inputTuple.binaryRelation.contains(Pair(x, y))
         )
-        S.forEach {
-            matched1.add(it.first)
-            matched2.add(it.second)
-        }
         val unmatched = inputTuple.binaryRelation.pairs
                 .filter { S1.contains(it.first) && S2.contains(it.second) }
                 .filter { !S.contains(it) }
         unmatched.forEach {
             val k = it.second.findPosition()
-            val moveOperation = EditOperation(MOVE, it.first, it.second.node.treeParent.psi, k)
+            val dstNode = inputTuple.binaryRelation.getPartner(it.second.parent!!)
+            val moveOperation = EditOperation(MOVE, it.first, dstNode, k)
             script.addAndPerform(moveOperation)
         }
     }

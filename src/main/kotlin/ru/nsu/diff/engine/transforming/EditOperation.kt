@@ -1,7 +1,8 @@
 package ru.nsu.diff.engine.transforming
 
-import com.intellij.openapi.command.WriteCommandAction
-import com.intellij.psi.PsiElement
+import ru.nsu.diff.engine.util.DeltaTreeElement
+
+private const val SEPARATOR = " | "
 
 enum class EditOperationType {
     UPDATE, // unused type
@@ -12,10 +13,27 @@ enum class EditOperationType {
 
 class EditOperation (
         val type: EditOperationType,
-        val srcNode: PsiElement,
-        val dstNode: PsiElement?,
+        val srcNode: DeltaTreeElement,
+        val dstNode: DeltaTreeElement?,
         val placementIndex: Int?
 ) {
+    override fun toString(): String {
+        val stringBuilder = StringBuilder()
+        stringBuilder
+                .append("Type: ").append(type)
+                .append(SEPARATOR)
+                .append("Src: ").append(srcNode.name())
+                .append(SEPARATOR)
+        if (dstNode != null && placementIndex != null) {
+            stringBuilder
+                    .append("Dst: ").append(dstNode.name())
+                    .append(SEPARATOR)
+                    .append("Index: ").append(placementIndex)
+        }
+        return stringBuilder.toString()
+    }
+    private fun DeltaTreeElement.name() = this.type.toString()
+
     fun isValid() : Boolean =
         when (type) {
             EditOperationType.UPDATE -> true
@@ -29,19 +47,16 @@ class EditOperation (
         when (type) {
             EditOperationType.UPDATE -> {}
             EditOperationType.MOVE -> {
-                dstNode!!.addBefore(srcNode, dstNode.children[placementIndex!!])
-
-                val srcParent = srcNode.node.treeParent.psi
-                val srcNodePlacementIndex = srcParent.children.indexOf(srcNode)
-                srcParent.children.drop(srcNodePlacementIndex)
+                srcNode.parent?.removeChild(srcNode)
+                dstNode!!.addChild(srcNode, placementIndex!!)
+                dstNode.refactorText()
             }
             EditOperationType.INSERT -> {
-                dstNode!!.addBefore(srcNode, dstNode.children[placementIndex!!])
+                dstNode!!.addChild(srcNode, placementIndex!!)
+                dstNode.refactorText()
             }
             EditOperationType.DELETE -> {
-                val srcParent = srcNode.node.treeParent.psi
-                val srcNodePlacementIndex = srcParent.children.indexOf(srcNode)
-                srcParent.children.drop(srcNodePlacementIndex)
+                srcNode.parent?.removeChild(srcNode)
             }
         }
     }

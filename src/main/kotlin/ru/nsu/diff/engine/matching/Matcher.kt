@@ -1,9 +1,7 @@
 package ru.nsu.diff.engine.matching
 
-import com.intellij.psi.PsiElement
-
-import ru.nsu.diff.engine.util.BinaryRelation
+import ru.nsu.diff.engine.util.DeltaTreeElement
 
 interface Matcher {
-    fun match(root1: PsiElement, root2: PsiElement)
+    fun match(root1: DeltaTreeElement, root2: DeltaTreeElement)
 }

@@ -4,13 +4,14 @@ import com.intellij.lang.ASTNode
 import com.intellij.psi.PsiElement
 
 import ru.nsu.diff.engine.util.BinaryRelation
+import ru.nsu.diff.engine.util.DeltaTreeElement
 import ru.nsu.diff.engine.util.LongestCommonSubsequence
 import ru.nsu.diff.engine.util.Queue
 
-class GoodWayMatcher(private val binaryRelation: BinaryRelation<PsiElement>) : Matcher {
-    private val equalParameterT = 0.75
+class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement>) : Matcher {
+    private val equalParameterT = 0.51
 
-    override fun match(root1: PsiElement, root2: PsiElement) {
+    override fun match(root1: DeltaTreeElement, root2: DeltaTreeElement) {
         val children1 = root1.childrenListInBfsReverseOrder().reversed()
         val children2 = root2.childrenListInBfsReverseOrder().reversed()
 
@@ -22,7 +23,7 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<PsiElement>) : M
      * @param children1 in the in-order traversal of T1 when siblings are visited left-to-right
      * @param children2 in the in-order traversal of T2 when siblings are visited left-to-right
      */
-    private fun fastMatch(children1: List<PsiElement>, children2: List<PsiElement>) {
+    private fun fastMatch(children1: List<DeltaTreeElement>, children2: List<DeltaTreeElement>) {
         val lcs = LongestCommonSubsequence.find(children1, children2, this::equal)
         lcs.forEach { binaryRelation.add(it) }
 
@@ -35,60 +36,46 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<PsiElement>) : M
         }
     }
 
-    private fun equal(x: PsiElement, y: PsiElement) : Boolean {
+    private fun equal(x: DeltaTreeElement, y: DeltaTreeElement) : Boolean {
         if (x.isLeaf() && y.isLeaf()) {
             return x.label() == y.label() && x.value() == y.value()
         }
         val max = maxOf(x.nodesNumber(), y.nodesNumber())
+        val value = common(x, y) * 1.0 / max
         return x.label() == y.label() && common(x, y) * 1.0 / max > equalParameterT
     }
 
-    private fun common(x: PsiElement, y: PsiElement) : Int = binaryRelation.pairs
+    private fun common(x: DeltaTreeElement, y: DeltaTreeElement) : Int = binaryRelation.pairs
             .filter { it.first haveParent x && it.second haveParent y }
             .count()
 
-    private infix fun PsiElement.haveParent(p: PsiElement) : Boolean {
-        var parent = this@haveParent.psiTreeParent()
-        while (parent != null) {
-            if (parent === p) return true
-            parent = parent.psiTreeParent()
+    private infix fun DeltaTreeElement.haveParent(p: DeltaTreeElement) : Boolean {
+        var currParent = parent
+        while (currParent != null) {
+            if (currParent === p) return true
+            currParent = currParent.parent
         }
         return false
     }
 
-    private fun PsiElement.childrenListInBfsReverseOrder() : MutableList<PsiElement> {
-        val queue: Queue<PsiElement> = Queue()
+    private fun DeltaTreeElement.childrenListInBfsReverseOrder() : MutableList<DeltaTreeElement> {
+        val queue: Queue<DeltaTreeElement> = Queue()
         queue.enqueue(this@childrenListInBfsReverseOrder)
-        val visited: MutableList<PsiElement> = mutableListOf()
+        val visited: MutableList<DeltaTreeElement> = mutableListOf()
 
         while (!queue.isEmpty()) {
             val curr = queue.dequeue()!!
             visited.add(curr)
 
-            val currNode = curr.node
-            if (currNode.firstChildNode == null) continue
-            var currChildNode = currNode.firstChildNode
-            val nodesToAdd = mutableListOf<ASTNode>()
-
-            while (currChildNode != null) {
-                nodesToAdd.add(currChildNode)
-                currChildNode = currChildNode.treeNext
-            }
-
-            nodesToAdd.reverse()
-            nodesToAdd.forEach { queue.enqueue(it.psi) }
+            curr.children.reversed().forEach { queue.enqueue(it) }
         }
 
         return visited
     }
 
-    private fun PsiElement.psiTreeParent() : PsiElement? = this@psiTreeParent.node?.treeParent?.psi
+    private fun DeltaTreeElement.nodesNumber() : Int = 1 + this@nodesNumber.children.sumBy { it.nodesNumber() }
 
-    private fun PsiElement.nodesNumber() : Int = 1 + this@nodesNumber.children.sumBy { it.nodesNumber() }
+    private fun DeltaTreeElement.label() = this@label.type
 
-    private fun PsiElement.isLeaf() : Boolean = this@isLeaf.children.isEmpty()
-
-    private fun PsiElement.label() : String = this@label.node.elementType.toString()
-
-    private fun PsiElement.value() : String = this@value.text
+    private fun DeltaTreeElement.value() = this@value.text
 }
