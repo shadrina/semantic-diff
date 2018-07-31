@@ -19,9 +19,6 @@ object Diff {
         val goldTree = buildDeltaTree(root2.node)
         GoodWayMatcher(binaryRelation).match(deltaTree, goldTree)
 
-        if (!binaryRelation.containsPairFor(deltaTree) && !binaryRelation.containsPairFor(goldTree))
-            binaryRelation.add(deltaTree, goldTree)
-
         return EditScriptGenerator.generateScript(InputTuple(deltaTree, goldTree, binaryRelation))
     }
 

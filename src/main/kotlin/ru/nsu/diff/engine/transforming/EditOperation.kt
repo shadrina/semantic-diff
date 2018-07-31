@@ -23,9 +23,9 @@ class EditOperation (
                 .append("Type: ").append(type)
                 .append(SEPARATOR)
                 .append("Src: ").append(srcNode.name())
-                .append(SEPARATOR)
         if (dstNode != null && placementIndex != null) {
             stringBuilder
+                    .append(SEPARATOR)
                     .append("Dst: ").append(dstNode.name())
                     .append(SEPARATOR)
                     .append("Index: ").append(placementIndex)
@@ -56,7 +56,9 @@ class EditOperation (
                 dstNode.refactorText()
             }
             EditOperationType.DELETE -> {
-                srcNode.parent?.removeChild(srcNode)
+                val parent = srcNode.parent
+                parent?.removeChild(srcNode)
+                parent?.refactorText()
             }
         }
     }

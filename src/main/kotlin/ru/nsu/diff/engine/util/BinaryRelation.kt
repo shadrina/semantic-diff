@@ -14,5 +14,6 @@ class BinaryRelation<T> {
         return result
     }
     fun containsPairFor(x: T) : Boolean = pairs.any { it.first === x || it.second === x }
+    fun removePairWith(x: T) = pairs.removeIf { it.first === x || it.second === x }
     fun contains(pair: Pair<T, T>) = pairs.contains(pair)
 }

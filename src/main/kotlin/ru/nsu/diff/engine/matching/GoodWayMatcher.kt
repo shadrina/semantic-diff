@@ -1,15 +1,14 @@
 package ru.nsu.diff.engine.matching
 
-import com.intellij.lang.ASTNode
-import com.intellij.psi.PsiElement
-
+import com.intellij.util.text.EditDistance
 import ru.nsu.diff.engine.util.BinaryRelation
 import ru.nsu.diff.engine.util.DeltaTreeElement
 import ru.nsu.diff.engine.util.LongestCommonSubsequence
 import ru.nsu.diff.engine.util.Queue
 
 class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement>) : Matcher {
-    private val equalParameterT = 0.51
+    private val equalParameterT = 0.55
+    private val boundaryDistance = 5
 
     override fun match(root1: DeltaTreeElement, root2: DeltaTreeElement) {
         val children1 = root1.childrenListInBfsReverseOrder().reversed()
@@ -17,6 +16,16 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement
 
         fastMatch(children1.filter { it.isLeaf() }, children2.filter { it.isLeaf() })
         fastMatch(children1.filter { !it.isLeaf() }, children2.filter { !it.isLeaf() })
+
+        /*
+            TODO: If binaryRelation contains one of roots, we need to create dummy roots for both trees
+            TODO: and add them to binaryRelation
+         */
+        if (!binaryRelation.containsPairFor(root1) && !binaryRelation.containsPairFor(root2)) {
+            binaryRelation.add(root1, root2)
+        }
+
+        postProcess(root1)
     }
 
     /**
@@ -34,6 +43,37 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement
                     binaryRelation.add(x, y)
             }
         }
+    }
+
+    private fun postProcess(node1: DeltaTreeElement) {
+        val node2 = binaryRelation.getPartner(node1) ?: return
+        node1.children.forEach {
+            val partner = binaryRelation.getPartner(it)
+            if (partner == null || partner.parent != node2) {
+                val candidate = it findBestPartnerInChildrenOf node2
+                if (candidate != null) {
+                    binaryRelation.removePairWith(it)
+                    binaryRelation.removePairWith(candidate)
+                    binaryRelation.add(it, candidate)
+                }
+            }
+        }
+        node1.children.forEach { postProcess(it) }
+    }
+
+    private infix fun DeltaTreeElement.findBestPartnerInChildrenOf(node: DeltaTreeElement) : DeltaTreeElement? {
+        var distance = 100
+        var partner: DeltaTreeElement? = null
+        node.children
+                .filter { it.label() == this.label() }
+                .forEach {
+                    val currDistance = EditDistance.levenshtein(this.text, it.text, false)
+                    if (currDistance < distance) {
+                        distance = currDistance
+                        partner = it
+                    }
+                }
+        return if (distance < boundaryDistance) partner else null
     }
 
     private fun equal(x: DeltaTreeElement, y: DeltaTreeElement) : Boolean {

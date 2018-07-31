@@ -39,7 +39,7 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
             return
         }
 
-        Diff.diff(firstPsi.copy(), secondPsi.copy()).render()
+        Diff.diff(firstPsi, secondPsi).render()
     }
 
     private fun EditScript.render() {
