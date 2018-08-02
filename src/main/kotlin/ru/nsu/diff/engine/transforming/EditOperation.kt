@@ -1,6 +1,7 @@
 package ru.nsu.diff.engine.transforming
 
 import ru.nsu.diff.engine.util.DeltaTreeElement
+import ru.nsu.diff.engine.util.LinesRange
 
 private const val SEPARATOR = " | "
 
@@ -12,10 +13,11 @@ enum class EditOperationType {
 }
 
 class EditOperation (
-        val type: EditOperationType,
-        val srcNode: DeltaTreeElement,
-        val dstNode: DeltaTreeElement?,
-        val placementIndex: Int?
+        private val type: EditOperationType,
+        private val srcNode: DeltaTreeElement,
+        private val dstNode: DeltaTreeElement?,
+        private val placementIndex: Int?,
+        private val linesRanges: Pair<LinesRange?, LinesRange?>
 ) {
     override fun toString(): String {
         val stringBuilder = StringBuilder()
@@ -30,6 +32,8 @@ class EditOperation (
                     .append(SEPARATOR)
                     .append("Index: ").append(placementIndex)
         }
+        stringBuilder.append(SEPARATOR).append("Lines: $linesRanges")
+
         return stringBuilder.toString()
     }
     private fun DeltaTreeElement.name() = this.type.toString()

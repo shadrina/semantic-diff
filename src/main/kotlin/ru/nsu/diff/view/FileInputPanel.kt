@@ -26,14 +26,14 @@ class FileInputPanel(val project: Project, val viewerPanel: DiffViewerPanel) : J
                 generateBrowseActionListener(
                         "Select first file",
                         firstFileChooser
-                ) { viewerPanel.firstFile = it }
+                ) { viewerPanel.file1 = it }
         )
         secondFileChooser.addBrowseFolderListener(
                 project,
                 generateBrowseActionListener(
                         "Select second file",
                         secondFileChooser
-                ) { viewerPanel.secondFile = it }
+                ) { viewerPanel.file2 = it }
         )
 
         firstFileChooser.setTextFieldPreferredWidth(FILE_CHOOSER_WIDTH)

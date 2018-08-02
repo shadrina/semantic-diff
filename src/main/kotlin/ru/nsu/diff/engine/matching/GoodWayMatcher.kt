@@ -1,5 +1,6 @@
 package ru.nsu.diff.engine.matching
 
+import com.intellij.psi.tree.IElementType
 import com.intellij.util.text.EditDistance
 import ru.nsu.diff.engine.util.BinaryRelation
 import ru.nsu.diff.engine.util.DeltaTreeElement
@@ -85,9 +86,17 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement
         return x.label() == y.label() && common(x, y) * 1.0 / max > equalParameterT
     }
 
-    private fun common(x: DeltaTreeElement, y: DeltaTreeElement) : Int = binaryRelation.pairs
-            .filter { it.first haveParent x && it.second haveParent y }
-            .count()
+    private fun common(x: DeltaTreeElement, y: DeltaTreeElement) : Int {
+        val initCount = binaryRelation.pairs
+                .filter { it.first haveParent x && it.second haveParent y }
+                .count()
+
+        // Try to increase synthetically the similarity coefficient if IDs are the same
+        // TODO: why * 2?
+        val id1 = x.children.find { it.toString() == "IDENTIFIER" }?.text
+        val id2 = y.children.find { it.toString() == "IDENTIFIER" }?.text
+        return if (id1 != null && id2 != null && id1 == id2) initCount * 2 else initCount
+    }
 
     private infix fun DeltaTreeElement.haveParent(p: DeltaTreeElement) : Boolean {
         var currParent = parent

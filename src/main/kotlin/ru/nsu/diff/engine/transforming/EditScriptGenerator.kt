@@ -1,5 +1,6 @@
 package ru.nsu.diff.engine.transforming
 
+import com.intellij.configurationStore.unwrapState
 import ru.nsu.diff.engine.transforming.EditOperationType.*
 import ru.nsu.diff.engine.util.DeltaTreeElement
 import ru.nsu.diff.engine.util.InputTuple
@@ -10,7 +11,7 @@ object EditScriptGenerator {
     private lateinit var inputTuple: InputTuple
     private lateinit var script: EditScript
 
-    fun generateScript(inputTuple: InputTuple) : EditScript {
+    fun generateScript(inputTuple: InputTuple) : EditScript? {
         this.script = EditScript()
         this.inputTuple = inputTuple
 
@@ -19,14 +20,18 @@ object EditScriptGenerator {
         bfs(queue, mutableListOf())
         inputTuple.T1.deleteRedundant()
 
-        return script
+        return if (treesAreIdentical(inputTuple.T1, inputTuple.T2)) script else null
     }
+
+    private fun treesAreIdentical(root1: DeltaTreeElement, root2: DeltaTreeElement) =
+            root1.text.removeWhiteSpace() == root2.text.removeWhiteSpace()
+    private fun String.removeWhiteSpace() = this
+            .replace(Regex("[\r\n ]"), "")
 
     private fun bfs(queue: Queue<DeltaTreeElement>, visited: MutableList<DeltaTreeElement>) {
         while (!queue.isEmpty()) {
             val curr = queue.dequeue() ?: return
             visited.add(curr)
-            curr.children.forEach { queue.enqueue(it) }
 
             val currParent = curr.parent
             var partner = inputTuple.binaryRelation.getPartner(curr)
@@ -35,7 +40,8 @@ object EditScriptGenerator {
             if (partner == null && currParent != null) {
                 val newNode = curr.copy()
                 val dstNode = inputTuple.binaryRelation.getPartner(currParent)
-                val insertOperation = EditOperation(INSERT, newNode, dstNode, curr.findPosition())
+                val ranges = Pair(null, curr.linesRange)
+                val insertOperation = EditOperation(INSERT, newNode, dstNode, curr.findPosition(), ranges)
                 script.addAndPerform(insertOperation)
                 partner = newNode
                 matchAllNodes(newNode, curr)
@@ -44,12 +50,15 @@ object EditScriptGenerator {
             } else if (partner != null && currParent != null) {
                 val partnerParent = partner.parent
                 if (partnerParent != null && !inputTuple.binaryRelation.contains(Pair(partnerParent, currParent))) {
-                    val moveOperation = EditOperation(MOVE, partner, partnerParent, curr.findPosition())
+                    val ranges = Pair(partner.linesRange, curr.linesRange)
+                    val moveOperation = EditOperation(MOVE, partner, partnerParent, curr.findPosition(), ranges)
                     script.addAndPerform(moveOperation)
                 }
             }
             // Align-phase
             alignChildren(partner!!, curr)
+
+            curr.children.forEach { queue.enqueue(it) }
         }
     }
 
@@ -57,7 +66,8 @@ object EditScriptGenerator {
         val deleteOps = mutableListOf<EditOperation>()
         this.children.forEach {
             if (!inputTuple.binaryRelation.containsPairFor(it)) {
-                val deleteOperation = EditOperation(DELETE, it, null, null)
+                val ranges = Pair(it.linesRange, null)
+                val deleteOperation = EditOperation(DELETE, it, null, null, ranges)
                 deleteOps.add(deleteOperation)
             } else it.deleteRedundant()
         }
@@ -103,7 +113,8 @@ object EditScriptGenerator {
         unmatched.forEach {
             val k = it.second.findPosition()
             val dstNode = inputTuple.binaryRelation.getPartner(it.second.parent!!)
-            val moveOperation = EditOperation(MOVE, it.first, dstNode, k)
+            val ranges = Pair(it.first.linesRange, it.second.linesRange)
+            val moveOperation = EditOperation(MOVE, it.first, dstNode, k, ranges)
             script.addAndPerform(moveOperation)
         }
     }

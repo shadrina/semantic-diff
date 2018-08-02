@@ -7,23 +7,25 @@ import com.intellij.psi.PsiWhiteSpace
 import ru.nsu.diff.engine.matching.GoodWayMatcher
 import ru.nsu.diff.engine.transforming.EditScript
 import ru.nsu.diff.engine.transforming.EditScriptGenerator
-import ru.nsu.diff.engine.util.BinaryRelation
-import ru.nsu.diff.engine.util.DeltaTreeElement
-import ru.nsu.diff.engine.util.InputTuple
+import ru.nsu.diff.engine.util.*
 
 object Diff {
-    fun diff(root1: PsiElement, root2: PsiElement) : EditScript {
+    fun diff(root1: PsiElement, root2: PsiElement) : EditScript? {
         val binaryRelation: BinaryRelation<DeltaTreeElement> = BinaryRelation()
 
         val deltaTree = buildDeltaTree(root1.node)
+        deltaTree.calculateRanges(root1.text.split("\r\n", "\n"))
         val goldTree = buildDeltaTree(root2.node)
+        goldTree.calculateRanges(root2.text.split("\r\n", "\n"))
         GoodWayMatcher(binaryRelation).match(deltaTree, goldTree)
 
         return EditScriptGenerator.generateScript(InputTuple(deltaTree, goldTree, binaryRelation))
     }
 
     private fun buildDeltaTree(node: ASTNode) : DeltaTreeElement {
-        val root = DeltaTreeElement(node.elementType, node.text)
+        val root = DeltaTreeElement(
+                node.elementType,
+                node.text)
 
         var nextChild = node.firstChildNode
         while (nextChild != null) {
@@ -33,5 +35,10 @@ object Diff {
         }
 
         return root
+    }
+
+    private fun DeltaTreeElement.calculateRanges(fileLines: List<String>) {
+        this.calculateLinesRange(fileLines)
+        children.forEach { it.calculateRanges(fileLines) }
     }
 }
