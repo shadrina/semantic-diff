@@ -7,7 +7,7 @@ import com.intellij.psi.PsiWhiteSpace
 import ru.nsu.diff.engine.matching.GoodWayMatcher
 import ru.nsu.diff.engine.transforming.EditScript
 import ru.nsu.diff.engine.transforming.EditScriptGenerator
-import ru.nsu.diff.engine.util.*
+import ru.nsu.diff.util.*
 
 object Diff {
     fun diff(root1: PsiElement, root2: PsiElement) : EditScript? {

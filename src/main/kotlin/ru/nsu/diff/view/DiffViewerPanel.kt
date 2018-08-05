@@ -11,25 +11,17 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiManager
 
 import javax.swing.JPanel
-import java.awt.BorderLayout
 import java.awt.Dimension
 import javax.swing.JLabel
 
 import ru.nsu.diff.engine.Diff
 import ru.nsu.diff.engine.transforming.EditScript
 import ru.nsu.diff.test.DiffTester
+import ru.nsu.diff.view.util.DiffEditorFactory
+import java.awt.BorderLayout
+import java.awt.Color
 
-
-private const val VIEWER_PANEL_WIDTH = 1550
-private const val VIEWER_PANEL_HEIGHT = 400
-
-private const val EDITOR_WIDTH = 600
-private const val EDITOR_HEIGHT = 300
-
-enum class Side {
-    RIGHT,
-    LEFT
-}
+enum class DiffSide { RIGHT, LEFT }
 
 class SemDiffVisibleAreaListener : VisibleAreaListener {
     override fun visibleAreaChanged(e: VisibleAreaEvent?) {
@@ -43,9 +35,15 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
     var file1: VirtualFile? = null
     var file2: VirtualFile? = null
 
+    private var leftEditor = DiffEditorFactory.createEditorPanel(project, null, DiffSide.LEFT)
+    private var rightEditor = DiffEditorFactory.createEditorPanel(project, null, DiffSide.RIGHT)
+    private val mockSplitter = DiffSplitter()
+
     init {
-        preferredSize = Dimension(VIEWER_PANEL_WIDTH, VIEWER_PANEL_HEIGHT)
         layout = BorderLayout()
+        mockSplitter.firstComponent = DiffEditorFactory.createLabeledEditor(leftEditor)
+        mockSplitter.secondComponent = DiffEditorFactory.createLabeledEditor(rightEditor)
+        add(mockSplitter, BorderLayout.CENTER)
     }
 
     fun showResult() {
@@ -72,49 +70,22 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
         }
     }
 
-    private fun createEditorPanel(file: VirtualFile, side: Side) : EditorEx {
-        val editorFactory = EditorFactory.getInstance()
-        // TODO: create Formatter class
-        val text = file.inputStream.bufferedReader().readText().replace("\r", "")
-        val document = editorFactory.createDocument(text)
-        val editor = editorFactory.createEditor(document, project, file1!!, false)
-
-        editor.component.preferredSize = Dimension(EDITOR_WIDTH, EDITOR_HEIGHT)
-        editor.contentComponent.isEnabled = true
-        editor.scrollingModel.addVisibleAreaListener(SemDiffVisibleAreaListener())
-        if (side == Side.LEFT) {
-            (editor as EditorEx).verticalScrollbarOrientation = EditorEx.VERTICAL_SCROLLBAR_LEFT
-        }
-
-        return editor as EditorEx
-    }
-
-    private fun createLabeledEditor(editor: EditorEx) : LabeledEditor {
-        val labeled = LabeledEditor()
-        val label = JLabel()
-        labeled.setComponent(editor.component, label)
-
-        return labeled
-    }
-
     private fun EditScript.render() {
         println(this)
 
-        val editor1 = createEditorPanel(file1!!, Side.LEFT)
-        val editor2 = createEditorPanel(file2!!, Side.RIGHT)
-
-        val left = createLabeledEditor(editor1)
-        val right = createLabeledEditor(editor2)
-
-        val splitter = DiffSplitter()
-        splitter.firstComponent = left
-        splitter.secondComponent = right
+        leftEditor = DiffEditorFactory.createEditorPanel(project, file1!!, DiffSide.LEFT)
+        rightEditor = DiffEditorFactory.createEditorPanel(project, file2!!, DiffSide.RIGHT)
 
         val painter = DividerPainter()
-        painter.leftEditor = editor1
-        painter.rightEditor = editor2
+        painter.leftEditor = leftEditor
+        painter.rightEditor = rightEditor
+
+        val splitter = DiffSplitter()
+        splitter.firstComponent = DiffEditorFactory.createLabeledEditor(leftEditor)
+        splitter.secondComponent = DiffEditorFactory.createLabeledEditor(rightEditor)
         splitter.setPainter(painter)
 
+        remove(mockSplitter)
         add(splitter, BorderLayout.CENTER)
         revalidate()
     }

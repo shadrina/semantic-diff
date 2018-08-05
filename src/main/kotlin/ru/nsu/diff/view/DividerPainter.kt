@@ -9,7 +9,6 @@ import java.awt.Graphics
 import javax.swing.JComponent
 import java.awt.Graphics2D
 
-
 class DividerPainter : DiffSplitter.Painter {
     var leftEditor: EditorEx? = null
     var rightEditor: EditorEx? = null
@@ -19,9 +18,8 @@ class DividerPainter : DiffSplitter.Painter {
         val gg = g as Graphics2D
 
         val color1 = ColorFactory.transparencyColor(Color.GRAY)
-        val polygon1 = DividerPolygon(10, 40, 50, 100, color1, false)
-        val color2 = ColorFactory.transparencyColor(Color.GRAY)
-        val polygon2 = DividerPolygon(30, 70, 80, 120, color2, false)
+        val polygon1 = DividerPolygon(25, 50, 100, 125, color1, false)
+        val polygon2 = DividerPolygon(50, 75, 125, 150, color1, false)
 
         val polygons = arrayListOf(polygon1, polygon2)
         DividerPolygon.paintPolygons(polygons, gg, component.width)

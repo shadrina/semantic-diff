@@ -1,11 +1,10 @@
 package ru.nsu.diff.engine.matching
 
-import com.intellij.psi.tree.IElementType
 import com.intellij.util.text.EditDistance
-import ru.nsu.diff.engine.util.BinaryRelation
-import ru.nsu.diff.engine.util.DeltaTreeElement
-import ru.nsu.diff.engine.util.LongestCommonSubsequence
-import ru.nsu.diff.engine.util.Queue
+import ru.nsu.diff.util.BinaryRelation
+import ru.nsu.diff.util.DeltaTreeElement
+import ru.nsu.diff.util.LongestCommonSubsequence
+import ru.nsu.diff.util.Queue
 
 class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement>) : Matcher {
     private val equalParameterT = 0.55

@@ -1,11 +1,10 @@
 package ru.nsu.diff.engine.transforming
 
-import com.intellij.configurationStore.unwrapState
 import ru.nsu.diff.engine.transforming.EditOperationType.*
-import ru.nsu.diff.engine.util.DeltaTreeElement
-import ru.nsu.diff.engine.util.InputTuple
-import ru.nsu.diff.engine.util.LongestCommonSubsequence
-import ru.nsu.diff.engine.util.Queue
+import ru.nsu.diff.util.DeltaTreeElement
+import ru.nsu.diff.util.InputTuple
+import ru.nsu.diff.util.LongestCommonSubsequence
+import ru.nsu.diff.util.Queue
 
 object EditScriptGenerator {
     private lateinit var inputTuple: InputTuple

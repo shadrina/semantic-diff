@@ -6,6 +6,7 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.ui.TextComponentAccessor
 import com.intellij.openapi.ui.ComponentWithBrowseButton
+import com.intellij.ui.components.JBLabel
 
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
@@ -13,9 +14,9 @@ import javax.swing.JPanel
 import javax.swing.JLabel
 import javax.swing.JTextField
 
-private const val FILE_CHOOSER_WIDTH = 35
+private const val FILE_CHOOSER_WIDTH = 40
 
-class FileInputPanel(val project: Project, val viewerPanel: DiffViewerPanel) : JPanel() {
+class FileInputPanel(val project: Project, private val viewerPanel: DiffViewerPanel) : JPanel() {
 
     private val firstFileChooser: TextFieldWithBrowseButton = TextFieldWithBrowseButton()
     private val secondFileChooser: TextFieldWithBrowseButton = TextFieldWithBrowseButton()
@@ -46,9 +47,9 @@ class FileInputPanel(val project: Project, val viewerPanel: DiffViewerPanel) : J
         gc.anchor = GridBagConstraints.LINE_END
         gc.gridx = 0
         gc.gridy = 0
-        add(JLabel("Select first file  "), gc)
+        add(JBLabel("Select file  "), gc)
         gc.gridy = 1
-        add(JLabel("Select second file  "), gc)
+        add(JBLabel("Select file  "), gc)
 
         gc.anchor = GridBagConstraints.CENTER
         gc.gridx = 1
