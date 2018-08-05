@@ -8,7 +8,7 @@ import java.awt.GridBagLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
 
-class MainDialog(private val project: Project) : DialogWrapper(project, true, IdeModalityType.MODELESS) {
+class MainDialog(project: Project) : DialogWrapper(project, true, IdeModalityType.MODELESS) {
 
     private val diffViewerPanel = DiffViewerPanel(project)
     private val fileInputPanel = FileInputPanel(project, diffViewerPanel)
@@ -28,7 +28,7 @@ class MainDialog(private val project: Project) : DialogWrapper(project, true, Id
         gc.gridy = 0
         panel.add(fileInputPanel, gc)
         gc.gridy = 1
-        // panel.add(diffViewerPanel, gc)
+        panel.add(diffViewerPanel, gc)
 
         return panel
     }
