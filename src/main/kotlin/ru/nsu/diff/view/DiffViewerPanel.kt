@@ -1,49 +1,84 @@
 package ru.nsu.diff.view
 
 import com.intellij.diff.tools.util.DiffSplitter
-import com.intellij.openapi.diff.impl.util.LabeledEditor
-import com.intellij.openapi.editor.EditorFactory
-import com.intellij.openapi.editor.event.VisibleAreaEvent
-import com.intellij.openapi.editor.event.VisibleAreaListener
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiManager
+import com.intellij.ui.JBColor
+import com.intellij.util.ui.UIUtil
 
 import javax.swing.JPanel
-import java.awt.Dimension
-import javax.swing.JLabel
+import java.awt.BorderLayout
+import javax.swing.JComponent
+import javax.swing.JLayer
 
 import ru.nsu.diff.engine.Diff
-import ru.nsu.diff.engine.transforming.EditScript
+import ru.nsu.diff.engine.conversion.DiffChunk
 import ru.nsu.diff.test.DiffTester
-import ru.nsu.diff.view.util.DiffEditorFactory
-import java.awt.BorderLayout
-import java.awt.Color
+import ru.nsu.diff.view.util.*
+
 
 enum class DiffSide { RIGHT, LEFT }
-
-class SemDiffVisibleAreaListener : VisibleAreaListener {
-    override fun visibleAreaChanged(e: VisibleAreaEvent?) {
-        println(e?.newRectangle)
-    }
-
-}
 
 class DiffViewerPanel(private val project: Project) : JPanel() {
 
     var file1: VirtualFile? = null
+        set(value) {
+            field = value
+            updateEditor(DiffSide.LEFT)
+        }
     var file2: VirtualFile? = null
+        set(value) {
+            field = value
+            updateEditor(DiffSide.RIGHT)
+        }
 
-    private var leftEditor = DiffEditorFactory.createEditorPanel(project, null, DiffSide.LEFT)
-    private var rightEditor = DiffEditorFactory.createEditorPanel(project, null, DiffSide.RIGHT)
-    private val mockSplitter = DiffSplitter()
+    private lateinit var leftEditor: EditorEx
+    private lateinit var rightEditor: EditorEx
+
+    private lateinit var leftLayerUI: GutterLayerUI
+    private lateinit var rightLayerUI: GutterLayerUI
+
+    private val splitter = DiffSplitter()
+    private val painter = DividerPainter()
 
     init {
         layout = BorderLayout()
-        mockSplitter.firstComponent = DiffEditorFactory.createLabeledEditor(leftEditor)
-        mockSplitter.secondComponent = DiffEditorFactory.createLabeledEditor(rightEditor)
-        add(mockSplitter, BorderLayout.CENTER)
+
+        updateEditor(DiffSide.LEFT)
+        updateEditor(DiffSide.RIGHT)
+
+        painter.leftEditor = leftEditor
+        painter.rightEditor = rightEditor
+        splitter.setPainter(painter)
+
+        add(splitter, BorderLayout.CENTER)
+    }
+
+    private fun updateEditor(side: DiffSide) {
+        when (side) {
+            DiffSide.LEFT -> {
+                leftEditor = DiffEditorUtil.createEditorPanel(project, file1, side)
+                UIUtil.removeScrollBorder(leftEditor.component)
+
+                val labeled = DiffEditorUtil.createDiffSidePanel(leftEditor)
+                leftLayerUI = GutterLayerUI(leftEditor, side)
+                val jLayer = JLayer<JComponent>(labeled, leftLayerUI)
+
+                splitter.firstComponent = jLayer
+            }
+            DiffSide.RIGHT -> {
+                rightEditor = DiffEditorUtil.createEditorPanel(project, file2, side)
+                UIUtil.removeScrollBorder(rightEditor.component)
+
+                val labeled = DiffEditorUtil.createDiffSidePanel(rightEditor)
+                rightLayerUI = GutterLayerUI(rightEditor, side)
+                val jLayer = JLayer<JComponent>(labeled, rightLayerUI)
+
+                splitter.secondComponent = jLayer
+            }
+        }
     }
 
     fun showResult() {
@@ -62,31 +97,24 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
             return
         }
 
-        val script = Diff.diff(psi1, psi2)
-        if (script == null) DiffViewerNotifier.showDialog(DiffMessageType.UNABLE_TO_DIFF)
+        val chunks = Diff.diff(psi1, psi2)
+        if (chunks == null) DiffViewerNotifier.showDialog(DiffMessageType.UNABLE_TO_DIFF)
         else {
-            script.render()
-            DiffTester.test(file1!!, file2!!, script)
+            chunks.render()
+            DiffTester.test(file1!!, file2!!, chunks)
         }
     }
 
-    private fun EditScript.render() {
-        println(this)
+    private fun List<DiffChunk>.render() {
+        this.forEach(::println)
 
-        leftEditor = DiffEditorFactory.createEditorPanel(project, file1!!, DiffSide.LEFT)
-        rightEditor = DiffEditorFactory.createEditorPanel(project, file2!!, DiffSide.RIGHT)
+        painter.createPolygons(this, splitter.dividerWidth)
+        splitter.repaintDivider()
 
-        val painter = DividerPainter()
-        painter.leftEditor = leftEditor
-        painter.rightEditor = rightEditor
+        DiffEditorUtil.paintEditor(leftEditor, this, DiffSide.LEFT)
+        DiffEditorUtil.paintEditor(rightEditor, this, DiffSide.RIGHT)
 
-        val splitter = DiffSplitter()
-        splitter.firstComponent = DiffEditorFactory.createLabeledEditor(leftEditor)
-        splitter.secondComponent = DiffEditorFactory.createLabeledEditor(rightEditor)
-        splitter.setPainter(painter)
-
-        remove(mockSplitter)
-        add(splitter, BorderLayout.CENTER)
-        revalidate()
+        leftLayerUI.chunks = this
+        rightLayerUI.chunks = this
     }
 }

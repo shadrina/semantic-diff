@@ -1,0 +1,8 @@
+package ru.nsu.diff.view.util
+
+const val DIFF_VIEWER_WIDTH = 1550
+const val DIFF_VIEWER_HEIGHT = 380
+const val DIVIDER_WIDTH = 30
+
+const val DIFF_EDITOR_WIDTH = DIFF_VIEWER_WIDTH / 2 - DIVIDER_WIDTH / 2
+const val DIFF_EDITOR_HEIGHT = DIFF_VIEWER_HEIGHT

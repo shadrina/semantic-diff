@@ -2,7 +2,6 @@ package ru.nsu.diff.view
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
-import java.awt.Graphics
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 

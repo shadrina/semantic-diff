@@ -3,6 +3,8 @@ package ru.nsu.diff.engine
 import com.intellij.lang.ASTNode
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiWhiteSpace
+import ru.nsu.diff.engine.conversion.Converter
+import ru.nsu.diff.engine.conversion.DiffChunk
 
 import ru.nsu.diff.engine.matching.GoodWayMatcher
 import ru.nsu.diff.engine.transforming.EditScript
@@ -10,7 +12,7 @@ import ru.nsu.diff.engine.transforming.EditScriptGenerator
 import ru.nsu.diff.util.*
 
 object Diff {
-    fun diff(root1: PsiElement, root2: PsiElement) : EditScript? {
+    fun diff(root1: PsiElement, root2: PsiElement) : List<DiffChunk>? {
         val binaryRelation: BinaryRelation<DeltaTreeElement> = BinaryRelation()
 
         val deltaTree = buildDeltaTree(root1.node)
@@ -19,7 +21,8 @@ object Diff {
         goldTree.calculateRanges(root2.text.split("\r\n", "\n"))
         GoodWayMatcher(binaryRelation).match(deltaTree, goldTree)
 
-        return EditScriptGenerator.generateScript(InputTuple(deltaTree, goldTree, binaryRelation))
+        val script =  EditScriptGenerator.generateScript(InputTuple(deltaTree, goldTree, binaryRelation))
+        return if (script != null) Converter.convert(script) else null
     }
 
     private fun buildDeltaTree(node: ASTNode) : DeltaTreeElement {

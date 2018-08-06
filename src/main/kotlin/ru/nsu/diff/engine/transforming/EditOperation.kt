@@ -19,7 +19,7 @@ class EditOperation (
         private val placementIndex: Int?,
         val linesRanges: Pair<LinesRange?, LinesRange?>
 ) {
-    override fun toString(): String {
+    override fun toString() : String {
         val stringBuilder = StringBuilder()
         stringBuilder
                 .append("Type: ").append(type)
@@ -37,6 +37,11 @@ class EditOperation (
         return stringBuilder.toString()
     }
     private fun DeltaTreeElement.name() = this.type.toString()
+
+    fun toShortString() : String {
+        return "Type: $type, Lines: $linesRanges"
+
+    }
 
     fun isValid() : Boolean =
         when (type) {

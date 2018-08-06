@@ -1,11 +1,36 @@
 package ru.nsu.diff.view.util
 
+import com.intellij.ui.JBColor
+import ru.nsu.diff.engine.transforming.EditOperationType
+
 import java.awt.Color
 
 object ColorFactory {
-    fun transparencyColor(bg: Color): Color {
+    fun dividerOperationColor(editOperation: EditOperationType?) = transparencyColor(when (editOperation) {
+        EditOperationType.UPDATE -> Color(0, 62, 123)
+        EditOperationType.INSERT -> Color(92, 175, 67)
+        EditOperationType.DELETE -> Color(255, 186, 102)
+        EditOperationType.MOVE -> Color(152, 122, 152)
+        else -> Color(110, 155, 255)
+    })
+
+    fun editorOperationColor(editOperation: EditOperationType?) = transparencyColor(when (editOperation) {
+        EditOperationType.UPDATE -> Color(220, 230, 225)
+        EditOperationType.INSERT -> Color(220, 255, 220)
+        EditOperationType.DELETE -> Color(255, 220, 220)
+        EditOperationType.MOVE -> Color(220, 211, 220)
+        else -> Color(232, 234, 255)
+    })
+
+    fun transparencyColor(bg: Color): JBColor {
         val opacity = 0.3f
-        return Color(opacityValue(bg.red), opacityValue(bg.green), opacityValue(bg.blue), opacity)
+        return JBColor {
+            Color(
+                    opacityValue(bg.red),
+                    opacityValue(bg.green),
+                    opacityValue(bg.blue),
+                    opacity)
+        }
     }
 
     private fun opacityValue(opacity: Int): Float {
