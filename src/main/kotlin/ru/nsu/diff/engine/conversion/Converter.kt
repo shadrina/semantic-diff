@@ -1,23 +1,32 @@
 package ru.nsu.diff.engine.conversion
 
+import ru.nsu.diff.engine.transforming.EditOperation
 import ru.nsu.diff.engine.transforming.EditScript
+
+data class OperationWithSelectedMark(val operation: EditOperation, var selected: Boolean)
 
 object Converter {
     fun convert(editScript: EditScript) : List<DiffChunk> {
         val chunks = mutableListOf<DiffChunk>()
-        var nextChunk = DiffChunk()
+        val operationsWithSelectedMark = editScript.editOperations
+                .map { OperationWithSelectedMark(it, false) }
 
-        for (operation in editScript.editOperations) {
-            if (!nextChunk.ableToMerge(operation)) {
-                chunks.add(nextChunk)
-                if (nextChunk.myOperations.size == 1) {
-                    nextChunk.type = nextChunk.myOperations.first().type
+        operationsWithSelectedMark.forEach { next ->
+            if (next.selected) return@forEach
+
+            val chunk = DiffChunk()
+            chunk.add(next.operation)
+            next.selected = true
+
+            operationsWithSelectedMark.forEach {
+                if (!it.selected && chunk.ableToMerge(it.operation)) {
+                    chunk.add(it.operation)
+                    it.selected = true
                 }
-                nextChunk = DiffChunk()
             }
-            nextChunk.add(operation)
+            chunk.initType()
+            chunks.add(chunk)
         }
-        chunks.add(nextChunk)
 
         return chunks
     }

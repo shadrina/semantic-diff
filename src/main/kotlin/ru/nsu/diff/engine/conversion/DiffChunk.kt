@@ -9,13 +9,30 @@ class DiffChunk {
     var rightLines: LinesRange? = null
 
     var type: EditOperationType? = null
-    val myOperations = mutableListOf<EditOperation>()
+    private val myOperations = mutableListOf<EditOperation>()
+
+    fun initType() {
+        if (isPrimitive()) type = myOperations.first().type
+    }
 
     fun ableToMerge(other: EditOperation) : Boolean {
-        if (leftLines == null || rightLines == null) return true
+        if (leftLines === null && rightLines === null) return true
+
         val otherLeftLines = other.linesRanges.first
         val otherRightLines = other.linesRanges.second
-        return leftLines!!.intersectsWith(otherLeftLines) || rightLines!!.intersectsWith(otherRightLines)
+        if (leftLines === null && rightLines !== null) {
+            if (otherRightLines === null && otherLeftLines !== null) {
+                return rightLines!!.intersectsWith(otherLeftLines)
+            }
+            return rightLines!!.intersectsWith(otherRightLines)
+        }
+        if (rightLines === null && leftLines !== null) {
+            if (otherLeftLines === null && otherRightLines !== null) {
+                return leftLines!!.intersectsWith(otherRightLines)
+            }
+            return leftLines!!.intersectsWith(otherLeftLines)
+        }
+        return leftLines!!.intersectsWith(otherLeftLines) && rightLines!!.intersectsWith(otherRightLines)
     }
 
     fun add(other: EditOperation) {
@@ -37,4 +54,6 @@ class DiffChunk {
 
         """.replaceIndent("")
     }
+
+    private fun isPrimitive() = myOperations.size == 1
 }

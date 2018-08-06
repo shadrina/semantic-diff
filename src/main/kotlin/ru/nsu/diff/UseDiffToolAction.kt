@@ -11,7 +11,7 @@ class UseDiffToolAction : AnAction() {
         val project = e.project
         val presentation = e.presentation
 
-        if (project == null) {
+        if (project === null) {
             presentation.isEnabledAndVisible = false
             return
         }

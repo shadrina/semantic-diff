@@ -1,7 +1,5 @@
 package ru.nsu.diff.view.util
 
-import com.intellij.openapi.editor.event.VisibleAreaEvent
-import com.intellij.openapi.editor.event.VisibleAreaListener
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.ui.JBColor
 
@@ -17,13 +15,25 @@ import ru.nsu.diff.view.panels.DiffSide
  * Highlights lines on gutter component of editor
  */
 class GutterLayerUI(
+        private val dividerPainter: DividerPainter,
+        private val myComponent: JComponent,
         private val editor: EditorEx,
         private val side: DiffSide
-) : LayerUI<JComponent>(), VisibleAreaListener {
+) : LayerUI<JComponent>() {
     var chunks: List<DiffChunk> = listOf()
+    var currY: Int = 0
 
     init {
-        editor.scrollingModel.addVisibleAreaListener(this)
+        editor.scrollingModel.addVisibleAreaListener(
+                DiffVisibleAreaListener {
+                    currY = it
+                    if (side == DiffSide.LEFT) dividerPainter.currLeftY = it
+                    else dividerPainter.currRightY = it
+
+                    dividerPainter.mySplitter.repaintDivider()
+                    myComponent.repaint()
+                }
+        )
     }
 
     override fun paint(g: Graphics?, c: JComponent) {
@@ -43,17 +53,15 @@ class GutterLayerUI(
         for (chunk in chunks) {
             linesRange = if (side == DiffSide.LEFT) chunk.leftLines else chunk.rightLines
             gutterColor = ColorFactory.dividerOperationColor(chunk.type)
-            val start = linesRange?.startLine ?: 0
-            val stop = linesRange?.stopLine ?: 0
+
+            if (linesRange === null) return
+            val start = linesRange.startLine
+            val stop = linesRange.stopLine
 
             for (i in start..stop) {
                 g.color = gutterColor
-                g.fillRect(xOffset, i * lineHeight, gutterWidth, lineHeight)
+                g.fillRect(xOffset, i * lineHeight - currY, gutterWidth, lineHeight)
             }
         }
-    }
-
-    override fun visibleAreaChanged(e: VisibleAreaEvent?) {
-
     }
 }

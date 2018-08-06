@@ -63,8 +63,10 @@ object DiffEditorUtil {
             linesRange = if (diffSide == DiffSide.LEFT) chunk.leftLines else chunk.rightLines
             color = ColorFactory.editorOperationColor(chunk.type)
             textAttributes = TextAttributes(null, color, null, null, 0)
-            val start = linesRange?.startLine ?: 0
-            val stop = linesRange?.stopLine ?: 0
+
+            if (linesRange === null) return
+            val start = linesRange.startLine
+            val stop = linesRange.stopLine
             for (i in start..stop) {
                 editor.markupModel.addLineHighlighter(i, HighlighterLayer.CARET_ROW, textAttributes)
             }

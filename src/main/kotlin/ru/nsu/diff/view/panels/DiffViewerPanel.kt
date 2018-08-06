@@ -22,7 +22,6 @@ import ru.nsu.diff.view.util.*
 enum class DiffSide { RIGHT, LEFT }
 
 class DiffViewerPanel(private val project: Project) : JPanel() {
-
     lateinit var infoPanel: InfoPanel
 
     var file1: VirtualFile? = null
@@ -43,7 +42,7 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
     private lateinit var rightLayerUI: GutterLayerUI
 
     private val splitter = DiffSplitter()
-    private val painter = DividerPainter()
+    private val painter = DividerPainter(splitter)
 
     init {
         layout = BorderLayout()
@@ -66,7 +65,7 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
                 UIUtil.removeScrollBorder(leftEditor.component)
 
                 val labeled = DiffEditorUtil.createDiffSidePanel(leftEditor)
-                leftLayerUI = GutterLayerUI(leftEditor, side)
+                leftLayerUI = GutterLayerUI(painter, labeled, leftEditor, side)
                 val jLayer = JLayer<JComponent>(labeled, leftLayerUI)
 
                 splitter.firstComponent = jLayer
@@ -76,7 +75,7 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
                 UIUtil.removeScrollBorder(rightEditor.component)
 
                 val labeled = DiffEditorUtil.createDiffSidePanel(rightEditor)
-                rightLayerUI = GutterLayerUI(rightEditor, side)
+                rightLayerUI = GutterLayerUI(painter, labeled, rightEditor, side)
                 val jLayer = JLayer<JComponent>(labeled, rightLayerUI)
 
                 splitter.secondComponent = jLayer
@@ -85,17 +84,17 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
     }
 
     fun showResult() {
-        if (file1 == null || file2 == null) {
+        if (file1 === null || file2 === null) {
             DiffViewerNotifier.showDialog(DiffMessageType.NO_FILES)
             return
         }
-        if (file1!!.fileType != file2!!.fileType) {
+        if (file1!!.fileType !== file2!!.fileType) {
             DiffViewerNotifier.showDialog(DiffMessageType.DIFFERENT_TYPES)
             return
         }
         val psi1 = PsiManager.getInstance(project).findFile(file1!!)?.originalElement
         val psi2 = PsiManager.getInstance(project).findFile(file2!!)?.originalElement
-        if (psi1 == null || psi2 == null) {
+        if (psi1 === null || psi2 === null) {
             DiffViewerNotifier.showDialog(DiffMessageType.UNABLE_TO_DIFF)
             return
         }
@@ -113,13 +112,13 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
 
         infoPanel.differenceCount = this.size
 
-        painter.createPolygons(this, splitter.dividerWidth)
-        splitter.repaintDivider()
-
         DiffEditorUtil.paintEditor(leftEditor, this, DiffSide.LEFT)
         DiffEditorUtil.paintEditor(rightEditor, this, DiffSide.RIGHT)
 
         leftLayerUI.chunks = this
         rightLayerUI.chunks = this
+        painter.chunks = this
+
+        splitter.repaintDivider()
     }
 }

@@ -22,7 +22,7 @@ object Diff {
         GoodWayMatcher(binaryRelation).match(deltaTree, goldTree)
 
         val script =  EditScriptGenerator.generateScript(InputTuple(deltaTree, goldTree, binaryRelation))
-        return if (script != null) Converter.convert(script) else null
+        return if (script !== null) Converter.convert(script) else null
     }
 
     private fun buildDeltaTree(node: ASTNode) : DeltaTreeElement {
@@ -31,7 +31,7 @@ object Diff {
                 node.text)
 
         var nextChild = node.firstChildNode
-        while (nextChild != null) {
+        while (nextChild !== null) {
             if (nextChild !is PsiWhiteSpace)
                 root.addChild(buildDeltaTree(nextChild))
             nextChild = nextChild.treeNext

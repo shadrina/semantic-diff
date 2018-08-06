@@ -8,9 +8,9 @@ import java.awt.Color
 object ColorFactory {
     fun dividerOperationColor(editOperation: EditOperationType?) = transparencyColor(when (editOperation) {
         EditOperationType.UPDATE -> Color(0, 62, 123)
-        EditOperationType.INSERT -> Color(92, 175, 67)
-        EditOperationType.DELETE -> Color(255, 186, 102)
-        EditOperationType.MOVE -> Color(152, 122, 152)
+        EditOperationType.INSERT -> Color(127, 222, 127)
+        EditOperationType.DELETE -> Color(255, 105, 103)
+        EditOperationType.MOVE   -> Color(152, 122, 152)
         else -> Color(110, 155, 255)
     })
 
@@ -18,7 +18,7 @@ object ColorFactory {
         EditOperationType.UPDATE -> Color(220, 230, 225)
         EditOperationType.INSERT -> Color(220, 255, 220)
         EditOperationType.DELETE -> Color(255, 220, 220)
-        EditOperationType.MOVE -> Color(220, 211, 220)
+        EditOperationType.MOVE -> Color(226, 217, 226)
         else -> Color(232, 234, 255)
     })
 
