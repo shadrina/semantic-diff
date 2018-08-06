@@ -1,4 +1,4 @@
-package ru.nsu.diff.view
+package ru.nsu.diff.view.util
 
 import com.intellij.openapi.ui.Messages
 

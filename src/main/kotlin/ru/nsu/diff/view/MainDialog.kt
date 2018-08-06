@@ -2,6 +2,8 @@ package ru.nsu.diff.view
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
+import ru.nsu.diff.view.panels.DiffViewerPanel
+import ru.nsu.diff.view.panels.UpperPanel
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 

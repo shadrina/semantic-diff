@@ -1,25 +1,18 @@
 package ru.nsu.diff.view.util
 
-import com.intellij.ide.diff.DiffType
 import com.intellij.openapi.diff.impl.DiffHighlighterFactoryImpl
-import com.intellij.openapi.diff.impl.DiffLineMarkerRenderer
 import com.intellij.openapi.diff.impl.util.LabeledEditor
-import com.intellij.openapi.diff.impl.util.TextDiffType
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.editor.markup.HighlighterLayer
-import com.intellij.openapi.editor.markup.RangeHighlighter
 import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.JBColor
 import ru.nsu.diff.engine.conversion.DiffChunk
 import ru.nsu.diff.util.LinesRange
-import ru.nsu.diff.view.DiffSide
-import java.awt.Color
+import ru.nsu.diff.view.panels.DiffSide
 import java.awt.Dimension
-import java.awt.Graphics
-import java.awt.Rectangle
 import javax.swing.JLabel
 
 object DiffEditorUtil {

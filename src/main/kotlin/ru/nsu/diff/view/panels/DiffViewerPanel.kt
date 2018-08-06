@@ -1,4 +1,4 @@
-package ru.nsu.diff.view
+package ru.nsu.diff.view.panels
 
 import com.intellij.diff.tools.util.DiffSplitter
 import com.intellij.openapi.editor.ex.EditorEx
@@ -9,19 +9,21 @@ import com.intellij.ui.JBColor
 import com.intellij.util.ui.UIUtil
 
 import javax.swing.JPanel
-import java.awt.BorderLayout
 import javax.swing.JComponent
 import javax.swing.JLayer
+import javax.swing.BorderFactory
+import java.awt.BorderLayout
 
 import ru.nsu.diff.engine.Diff
 import ru.nsu.diff.engine.conversion.DiffChunk
 import ru.nsu.diff.test.DiffTester
 import ru.nsu.diff.view.util.*
 
-
 enum class DiffSide { RIGHT, LEFT }
 
 class DiffViewerPanel(private val project: Project) : JPanel() {
+
+    lateinit var infoPanel: InfoPanel
 
     var file1: VirtualFile? = null
         set(value) {
@@ -45,6 +47,7 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
 
     init {
         layout = BorderLayout()
+        border = BorderFactory.createLineBorder(JBColor.LIGHT_GRAY, 1)
 
         updateEditor(DiffSide.LEFT)
         updateEditor(DiffSide.RIGHT)
@@ -107,6 +110,8 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
 
     private fun List<DiffChunk>.render() {
         this.forEach(::println)
+
+        infoPanel.differenceCount = this.size
 
         painter.createPolygons(this, splitter.dividerWidth)
         splitter.repaintDivider()

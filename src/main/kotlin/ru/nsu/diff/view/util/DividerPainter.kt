@@ -15,7 +15,6 @@ import java.awt.Shape
 import java.awt.geom.CubicCurve2D
 
 import ru.nsu.diff.engine.conversion.DiffChunk
-import ru.nsu.diff.view.DiffSide
 
 class DividerPainter : DiffSplitter.Painter, VisibleAreaListener {
     var leftEditor: EditorEx? = null

@@ -1,4 +1,4 @@
-package ru.nsu.diff.view
+package ru.nsu.diff.view.panels
 
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.project.Project
@@ -11,7 +11,6 @@ import com.intellij.ui.components.JBLabel
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.JPanel
-import javax.swing.JLabel
 import javax.swing.JTextField
 
 private const val FILE_CHOOSER_WIDTH = 40

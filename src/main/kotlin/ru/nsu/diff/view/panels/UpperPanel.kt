@@ -1,4 +1,4 @@
-package ru.nsu.diff.view
+package ru.nsu.diff.view.panels
 
 import com.intellij.openapi.project.Project
 import java.awt.GridBagConstraints
@@ -17,5 +17,7 @@ class UpperPanel(project: Project, viewerPanel: DiffViewerPanel) : JPanel() {
         add(fileInputPanel, gc)
         gc.gridx = 1
         add(infoPanel, gc)
+
+        viewerPanel.infoPanel = infoPanel
     }
 }

@@ -1,5 +1,7 @@
-package ru.nsu.diff.view
+package ru.nsu.diff.view.util
 
+import com.intellij.openapi.editor.event.VisibleAreaEvent
+import com.intellij.openapi.editor.event.VisibleAreaListener
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.ui.JBColor
 
@@ -9,13 +11,20 @@ import javax.swing.plaf.LayerUI
 
 import ru.nsu.diff.engine.conversion.DiffChunk
 import ru.nsu.diff.util.LinesRange
-import ru.nsu.diff.view.util.ColorFactory
+import ru.nsu.diff.view.panels.DiffSide
 
+/**
+ * Highlights lines on gutter component of editor
+ */
 class GutterLayerUI(
         private val editor: EditorEx,
         private val side: DiffSide
-) : LayerUI<JComponent>() {
+) : LayerUI<JComponent>(), VisibleAreaListener {
     var chunks: List<DiffChunk> = listOf()
+
+    init {
+        editor.scrollingModel.addVisibleAreaListener(this)
+    }
 
     override fun paint(g: Graphics?, c: JComponent) {
         super.paint(g, c)
@@ -27,7 +36,7 @@ class GutterLayerUI(
         var gutterColor: JBColor
 
         val xOffset = when (side) {
-            DiffSide.LEFT  -> editor.component.width - gutterWidth
+            DiffSide.LEFT -> editor.component.width - gutterWidth
             DiffSide.RIGHT -> 0
         }
 
@@ -42,5 +51,9 @@ class GutterLayerUI(
                 g.fillRect(xOffset, i * lineHeight, gutterWidth, lineHeight)
             }
         }
+    }
+
+    override fun visibleAreaChanged(e: VisibleAreaEvent?) {
+
     }
 }
