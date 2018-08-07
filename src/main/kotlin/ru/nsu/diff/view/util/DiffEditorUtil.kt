@@ -64,7 +64,7 @@ object DiffEditorUtil {
             color = ColorFactory.editorOperationColor(chunk.type)
             textAttributes = TextAttributes(null, color, null, null, 0)
 
-            if (linesRange === null) return
+            if (linesRange === null) continue
             val start = linesRange.startLine
             val stop = linesRange.stopLine
             for (i in start..stop) {

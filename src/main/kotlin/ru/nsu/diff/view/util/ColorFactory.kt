@@ -9,7 +9,7 @@ object ColorFactory {
     fun dividerOperationColor(editOperation: EditOperationType?) = transparencyColor(when (editOperation) {
         EditOperationType.UPDATE -> Color(0, 62, 123)
         EditOperationType.INSERT -> Color(127, 222, 127)
-        EditOperationType.DELETE -> Color(255, 105, 103)
+        EditOperationType.DELETE -> Color(255, 45, 45)
         EditOperationType.MOVE   -> Color(152, 122, 152)
         else -> Color(110, 155, 255)
     })

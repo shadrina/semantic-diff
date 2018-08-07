@@ -54,7 +54,7 @@ class GutterLayerUI(
             linesRange = if (side == DiffSide.LEFT) chunk.leftLines else chunk.rightLines
             gutterColor = ColorFactory.dividerOperationColor(chunk.type)
 
-            if (linesRange === null) return
+            if (linesRange === null) continue
             val start = linesRange.startLine
             val stop = linesRange.stopLine
 

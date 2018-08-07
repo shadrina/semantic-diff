@@ -21,16 +21,12 @@ class DiffChunk {
         val otherLeftLines = other.linesRanges.first
         val otherRightLines = other.linesRanges.second
         if (leftLines === null && rightLines !== null) {
-            if (otherRightLines === null && otherLeftLines !== null) {
-                return rightLines!!.intersectsWith(otherLeftLines)
-            }
-            return rightLines!!.intersectsWith(otherRightLines)
+            return if (otherRightLines === null && otherLeftLines !== null) rightLines!!.intersectsWith(otherLeftLines)
+            else rightLines!!.intersectsWith(otherRightLines)
         }
         if (rightLines === null && leftLines !== null) {
-            if (otherLeftLines === null && otherRightLines !== null) {
-                return leftLines!!.intersectsWith(otherRightLines)
-            }
-            return leftLines!!.intersectsWith(otherLeftLines)
+            return if (otherLeftLines === null && otherRightLines !== null) leftLines!!.intersectsWith(otherRightLines)
+            else leftLines!!.intersectsWith(otherLeftLines)
         }
         return leftLines!!.intersectsWith(otherLeftLines) && rightLines!!.intersectsWith(otherRightLines)
     }
