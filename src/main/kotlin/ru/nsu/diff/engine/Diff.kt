@@ -27,6 +27,7 @@ object Diff {
 
     private fun buildDeltaTree(node: ASTNode) : DeltaTreeElement {
         val root = DeltaTreeElement(
+                node.psi,
                 node.elementType,
                 node.text)
 

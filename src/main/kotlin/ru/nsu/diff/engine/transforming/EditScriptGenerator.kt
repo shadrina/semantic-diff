@@ -91,7 +91,7 @@ object EditScriptGenerator {
     }
 
     private fun DeltaTreeElement.copy() : DeltaTreeElement {
-        val newDelta = DeltaTreeElement(this.type, this.text)
+        val newDelta = DeltaTreeElement(this.myPsi, this.type, this.text)
         this.children.forEach { newDelta.addChild(it.copy()) }
         return newDelta
     }

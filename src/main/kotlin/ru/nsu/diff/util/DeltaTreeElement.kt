@@ -1,10 +1,12 @@
 package ru.nsu.diff.util
 
+import com.intellij.psi.PsiElement
 import com.intellij.psi.tree.IElementType
 
 class DeltaTreeElement(
-    val type: IElementType,
-    var text: String
+        val myPsi: PsiElement,
+        val type: IElementType,
+        var text: String
 ) {
     lateinit var linesRange: LinesRange
     var parent: DeltaTreeElement? = null
@@ -67,6 +69,8 @@ class DeltaTreeElement(
         }
         parent?.refactorText()
     }
+
+    fun psiRange() = myPsi.textRange
 
     override fun toString(): String {
         return "$type"
