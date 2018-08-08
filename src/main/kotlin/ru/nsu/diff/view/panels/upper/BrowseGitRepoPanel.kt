@@ -4,13 +4,15 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiFileFactory
 import com.intellij.ui.components.JBLabel
 import org.eclipse.jgit.lib.Repository
 import ru.nsu.diff.git.DiffTestDataProvider
 import ru.nsu.diff.git.DiffTestDataProvider.buildGitRepositoryFromVirtualFile
 import ru.nsu.diff.git.FileVersions
+import ru.nsu.diff.git.Version
 
 import java.awt.Dimension
 import javax.swing.JPanel
@@ -20,14 +22,15 @@ import java.awt.GridBagLayout
 
 import ru.nsu.diff.view.panels.DiffViewerPanel
 import ru.nsu.diff.view.util.*
-import java.io.File
-import java.io.FileOutputStream
+import java.nio.charset.Charset
 
 
+private const val FILE_CHOOSER_WIDTH = 39
 
-private const val FILE_CHOOSER_WIDTH = 40
-
-class BrowseGitRepoPanel(project: Project, viewerPanel: DiffViewerPanel) : JPanel() {
+class BrowseGitRepoPanel(
+        private val project: Project,
+        private val viewerPanel: DiffViewerPanel
+) : JPanel() {
     private val repositoryChooser: TextFieldWithBrowseButton = TextFieldWithBrowseButton()
     private val fileChooser: TextFieldWithBrowseButton = TextFieldWithBrowseButton()
 
@@ -35,6 +38,7 @@ class BrowseGitRepoPanel(project: Project, viewerPanel: DiffViewerPanel) : JPane
     private var v2ComboBox: ComboBox<String> = ComboBox()
 
     private var gitRepository: Repository? = null
+    private var chosenFile: VirtualFile? = null
     private var chosenFileVersions: FileVersions? = null
 
     init {
@@ -52,6 +56,7 @@ class BrowseGitRepoPanel(project: Project, viewerPanel: DiffViewerPanel) : JPane
                 ) {
                     gitRepository = buildGitRepositoryFromVirtualFile(it)
                     if (gitRepository == null) DiffDialogNotifier.showDialog(DiffMessageType.NOT_GIT_REPO)
+                    chosenFileVersions = null
                 }
         )
         fileChooser.addBrowseFolderListener(
@@ -61,18 +66,19 @@ class BrowseGitRepoPanel(project: Project, viewerPanel: DiffViewerPanel) : JPane
                         "Select file",
                         fileChooser,
                         FileChooserDescriptorFactory.createSingleFileNoJarsDescriptor()
-                ) { chosenFile ->
-                    if (chosenFile.extension != "kt" && chosenFile.extension != "java") {
+                ) { chosen ->
+                    if (chosen.extension != "kt" && chosen.extension != "java") {
                         DiffDialogNotifier.showDialog(DiffMessageType.INVALID_TYPE)
                     }
                     if (gitRepository != null) {
+                        chosenFile = chosen
                         chosenFileVersions = DiffTestDataProvider.getTestDataFromRepository(
                                 gitRepository!!,
-                                chosenFile.extension ?: "*",
-                                chosenFile.path
+                                chosen.extension ?: "*",
+                                chosen.path
                         ).firstOrNull()
 
-                        val hashes = chosenFileVersions?.versions?.map { it.hash.substring(0, 5) }
+                        val hashes = chosenFileVersions?.versions?.map { it.hash.substring(0, 7) }
                         if (hashes != null) {
                             leftSidedPanel.remove(v1ComboBox)
                             leftSidedPanel.remove(v2ComboBox)
@@ -93,22 +99,18 @@ class BrowseGitRepoPanel(project: Project, viewerPanel: DiffViewerPanel) : JPane
                                 val cb = it.source
                                 if (cb is ComboBox<*>) {
                                     val selected = cb.selectedItem
-                                    val bytes = chosenFileVersions!!.versions
-                                            .find { it.hash.startsWith(selected as String) }
-                                            ?.bytes
-                                    val vf = createDummyFileFromBytes(bytes, "Dummy1.${chosenFile.extension}")
-                                    viewerPanel.file1 = vf
+                                    val version = chosenFileVersions!!.versions
+                                            .first { it.hash.startsWith(selected as String) }
+                                    viewerPanel.psi1 = createPsiFileFromBytes(version)
                                 }
                             }
                             v2ComboBox.addActionListener {
                                 val cb = it.source
                                 if (cb is ComboBox<*>) {
                                     val selected = cb.selectedItem
-                                    val bytes = chosenFileVersions!!.versions
+                                    val version = chosenFileVersions!!.versions
                                             .find { it.hash.startsWith(selected as String) }
-                                            ?.bytes
-                                    val vf = createDummyFileFromBytes(bytes, "Dummy2.${chosenFile.extension}")
-                                    viewerPanel.file2 = vf
+                                    viewerPanel.psi2 = createPsiFileFromBytes(version)
                                 }
                             }
                         }
@@ -124,9 +126,9 @@ class BrowseGitRepoPanel(project: Project, viewerPanel: DiffViewerPanel) : JPane
         gc.anchor = GridBagConstraints.LINE_END
         gc.gridx = 0
         gc.gridy = 0
-        leftSidedPanel.add(JBLabel("   Select repo  "), gc)
+        leftSidedPanel.add(JBLabel("   Select repo "), gc)
         gc.gridy = 1
-        leftSidedPanel.add(JBLabel("   Select file  "), gc)
+        leftSidedPanel.add(JBLabel("   Select file "), gc)
 
         gc.anchor = GridBagConstraints.CENTER
         gc.gridx = 1
@@ -153,13 +155,11 @@ class BrowseGitRepoPanel(project: Project, viewerPanel: DiffViewerPanel) : JPane
         add(leftSidedPanel, BorderLayout.WEST)
     }
 
-    // TODO: temporary --- do not create files!
-    private fun createDummyFileFromBytes(bytes: ByteArray?, fileName: String) : VirtualFile? {
-        if (bytes == null) return null
-        val path = "D:/tmp/$fileName"
-        FileOutputStream(path).use { fos ->
-            fos.write(bytes)
-        }
-        return LocalFileSystem.getInstance().refreshAndFindFileByIoFile(File(path))
+    private fun createPsiFileFromBytes(version: Version?) : PsiFile? {
+        if (version == null || chosenFile == null) return null
+        val name = "Dummy${version.hash}.${chosenFile!!.extension}"
+        val fileType = chosenFile!!.fileType
+        val text = StringBuilder(String(version.bytes, Charset.defaultCharset()))
+        return PsiFileFactory.getInstance(project).createFileFromText(name, fileType, text)
     }
 }

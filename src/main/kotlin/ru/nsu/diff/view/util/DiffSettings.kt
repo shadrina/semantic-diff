@@ -11,7 +11,7 @@ package ru.nsu.diff.view.util
  *                                      * Diff * Close *        *
  *******************************************************  *  *  */
 
-const val DIFF_DIALOG_WIDTH = 1570
+const val DIFF_DIALOG_WIDTH = 1650
 const val Diff_DIALOG_HEIGHT = 600
 
 const val DIFF_VIEWER_WIDTH = (DIFF_DIALOG_WIDTH * 0.985).toInt()
