@@ -101,10 +101,13 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
         }
 
         val chunks = Diff.diff(psi1, psi2)
-        if (chunks == null) DiffDialogNotifier.showDialog(DiffMessageType.UNABLE_TO_DIFF)
-        else {
-            chunks.render()
-            DiffTester.test(file1!!, file2!!, chunks)
+        when {
+            chunks == null -> DiffDialogNotifier.showDialog(DiffMessageType.UNABLE_TO_DIFF)
+            chunks.isEmpty() -> DiffDialogNotifier.showDialog(DiffMessageType.IDENTICAL_FILES)
+            else -> {
+                chunks.render()
+                DiffTester.test(file1!!, file2!!, chunks)
+            }
         }
     }
 

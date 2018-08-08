@@ -1,4 +1,4 @@
-package ru.nsu.diff.test
+package ru.nsu.diff.git
 
 import com.intellij.openapi.vfs.VirtualFile
 import org.eclipse.jgit.api.Git
@@ -13,13 +13,9 @@ import org.eclipse.jgit.treewalk.filter.PathSuffixFilter
 
 import java.io.File
 import java.io.IOException
+import java.util.*
 
-import ru.nsu.diff.test.util.FileVersions
-import ru.nsu.diff.test.util.Version
-
-data class FilterFor(val filter: PathSuffixFilter, val fileName: String)
-
-object DiffTestDataExtractor {
+object DiffTestDataProvider {
     fun buildGitRepositoryFromVirtualFile(vf: VirtualFile) : Repository? {
         val dir = File("${vf.path.changeSeparator()}/.git")
         val repo = FileRepositoryBuilder()

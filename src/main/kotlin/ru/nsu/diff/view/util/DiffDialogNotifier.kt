@@ -7,13 +7,15 @@ enum class DiffMessageType() {
     INVALID_TYPE, // TODO
     DIFFERENT_TYPES,
     NOT_GIT_REPO,
-    UNABLE_TO_DIFF
+    UNABLE_TO_DIFF,
+    IDENTICAL_FILES
 }
 
 object DiffDialogNotifier {
     fun showDialog(msgCode: DiffMessageType) {
         var msg = ""
         var title = ""
+        var icon = Messages.getWarningIcon()
 
         when (msgCode) {
             DiffMessageType.NO_FILES -> {
@@ -36,7 +38,12 @@ object DiffDialogNotifier {
                 msg = "Unable to diff files"
                 title = "Problem"
             }
+            DiffMessageType.IDENTICAL_FILES -> {
+                msg = "Files are identical"
+                title = "No differences"
+                icon = Messages.getInformationIcon()
+            }
         }
-        Messages.showMessageDialog(msg, title, Messages.getWarningIcon())
+        Messages.showMessageDialog(msg, title, icon)
     }
 }

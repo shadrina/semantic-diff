@@ -8,9 +8,9 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.components.JBLabel
 import org.eclipse.jgit.lib.Repository
-import ru.nsu.diff.test.DiffTestDataExtractor
-import ru.nsu.diff.test.DiffTestDataExtractor.buildGitRepositoryFromVirtualFile
-import ru.nsu.diff.test.util.FileVersions
+import ru.nsu.diff.git.DiffTestDataProvider
+import ru.nsu.diff.git.DiffTestDataProvider.buildGitRepositoryFromVirtualFile
+import ru.nsu.diff.git.FileVersions
 
 import java.awt.Dimension
 import javax.swing.JPanel
@@ -21,9 +21,6 @@ import java.awt.GridBagLayout
 import ru.nsu.diff.view.panels.DiffViewerPanel
 import ru.nsu.diff.view.util.*
 import java.io.File
-import java.io.IOException
-import java.nio.file.Files
-import java.nio.file.Paths
 import java.io.FileOutputStream
 
 
@@ -69,7 +66,7 @@ class BrowseGitRepoPanel(project: Project, viewerPanel: DiffViewerPanel) : JPane
                         DiffDialogNotifier.showDialog(DiffMessageType.INVALID_TYPE)
                     }
                     if (gitRepository != null) {
-                        chosenFileVersions = DiffTestDataExtractor.getTestDataFromRepository(
+                        chosenFileVersions = DiffTestDataProvider.getTestDataFromRepository(
                                 gitRepository!!,
                                 chosenFile.extension ?: "*",
                                 chosenFile.path
