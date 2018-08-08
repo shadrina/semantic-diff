@@ -1,5 +1,5 @@
 package ru.nsu.diff.test.util
 
-import java.io.File
+data class Version(val hash: String, val bytes: ByteArray)
 
-data class FileVersions(val fileName: String, val versions: List<ByteArray>)
+data class FileVersions(val fileName: String, val versions: List<Version>)

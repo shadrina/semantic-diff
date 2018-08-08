@@ -17,6 +17,7 @@ import java.awt.BorderLayout
 import ru.nsu.diff.engine.Diff
 import ru.nsu.diff.engine.conversion.DiffChunk
 import ru.nsu.diff.test.DiffTester
+import ru.nsu.diff.view.panels.upper.InfoPanel
 import ru.nsu.diff.view.util.*
 
 enum class DiffSide { RIGHT, LEFT }
@@ -85,22 +86,22 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
 
     fun showResult() {
         if (file1 === null || file2 === null) {
-            DiffViewerNotifier.showDialog(DiffMessageType.NO_FILES)
+            DiffDialogNotifier.showDialog(DiffMessageType.NO_FILES)
             return
         }
         if (file1!!.fileType !== file2!!.fileType) {
-            DiffViewerNotifier.showDialog(DiffMessageType.DIFFERENT_TYPES)
+            DiffDialogNotifier.showDialog(DiffMessageType.DIFFERENT_TYPES)
             return
         }
         val psi1 = PsiManager.getInstance(project).findFile(file1!!)?.originalElement
         val psi2 = PsiManager.getInstance(project).findFile(file2!!)?.originalElement
         if (psi1 === null || psi2 === null) {
-            DiffViewerNotifier.showDialog(DiffMessageType.UNABLE_TO_DIFF)
+            DiffDialogNotifier.showDialog(DiffMessageType.UNABLE_TO_DIFF)
             return
         }
 
         val chunks = Diff.diff(psi1, psi2)
-        if (chunks == null) DiffViewerNotifier.showDialog(DiffMessageType.UNABLE_TO_DIFF)
+        if (chunks == null) DiffDialogNotifier.showDialog(DiffMessageType.UNABLE_TO_DIFF)
         else {
             chunks.render()
             DiffTester.test(file1!!, file2!!, chunks)

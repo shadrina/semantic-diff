@@ -1,10 +1,12 @@
 package ru.nsu.diff.test
 
+import com.intellij.openapi.vfs.VirtualFile
+import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.diff.EditList
 import org.eclipse.jgit.diff.HistogramDiff
 import org.eclipse.jgit.diff.RawText
 import org.eclipse.jgit.diff.RawTextComparator
-import org.eclipse.jgit.revwalk.RevWalk
+import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.eclipse.jgit.treewalk.TreeWalk
 import org.eclipse.jgit.treewalk.filter.PathSuffixFilter
@@ -13,55 +15,72 @@ import java.io.File
 import java.io.IOException
 
 import ru.nsu.diff.test.util.FileVersions
+import ru.nsu.diff.test.util.Version
+
+data class FilterFor(val filter: PathSuffixFilter, val fileName: String)
 
 object DiffTestDataExtractor {
-    fun getTestDataFromRepository(path: String, extension: String) : List<FileVersions> {
-        val result = mutableListOf<FileVersions>()
-        val dir = File(path)
-        if (!dir.exists() || !dir.isDirectory) return listOf()
-
-        val srcDir = File(path.removeSuffix(".git"))
-        val fileNames = srcDir.walkTopDown()
-                .filter { if (extension != "*") it.extension == extension else true }
-                .map { it.path.removePrefix("${srcDir.path}\\").replace("\\", "/") }
-                .toList()
-
-        val builder = FileRepositoryBuilder()
-        val repository = builder
+    fun buildGitRepositoryFromVirtualFile(vf: VirtualFile) : Repository? {
+        val dir = File("${vf.path.changeSeparator()}/.git")
+        val repo = FileRepositoryBuilder()
                 .setGitDir(dir)
                 .readEnvironment()
                 .findGitDir()
                 .build()
-        val head = repository.getRef("refs/heads/master")
+        return if (dir.exists()) repo else null
+    }
 
-        val filters = fileNames.map { PathSuffixFilter.create(it) }
+    fun getTestDataFromRepository(
+            repository: Repository,
+            extension: String,
+            targetFilePath: String? = null
+    ) : List<FileVersions> {
+        val map = HashMap<String, MutableList<Version>>()
 
-        for (i in 0 until filters.size) {
-            val walk = RevWalk(repository)
-            val commit = walk.parseCommit(head.objectId)
-            walk.markStart(commit)
+        val srcDir = File(repository.directory.parentFile.path)
+        val fileNames = srcDir.walkTopDown()
+                .filter { if (extension != "*") it.extension == extension else true }
+                .map { it.path
+                        .changeSeparator()
+                        .removePrefix("${srcDir.path.changeSeparator()}/")
+                }
+                .toList()
+        val targetFileName = targetFilePath
+                ?.changeSeparator()
+                ?.removePrefix("${srcDir.path.changeSeparator()}/")
+        val filters =
+                if (targetFileName == null) fileNames.map { FilterFor(PathSuffixFilter.create(it), it) }
+                else listOf(FilterFor(PathSuffixFilter.create(targetFileName), targetFileName))
 
-            val fileName = fileNames[i]
-            val versions = mutableListOf<ByteArray>()
+        val git = Git(repository)
+        val log = git.log().call()
+        val iterator = log.iterator()
 
-            for (rev in walk) {
-                val tree = rev.tree
+        while (iterator.hasNext()) {
+            val rev = iterator.next()
+            val tree = rev.tree
+
+            filters.forEach {
                 val treeWalk = TreeWalk(repository)
                 treeWalk.addTree(tree)
                 treeWalk.isRecursive = true
-                treeWalk.filter = filters[i]
+                treeWalk.filter = it.filter
 
-                if (treeWalk.next()) {
+                while (treeWalk.next()) {
                     val data = repository.open(treeWalk.getObjectId(0)).bytes
-                    val lastData = versions.lastOrNull()
-                    if (lastData == null || differenceCount(data, lastData) > 0) versions.add(data)
+                    val thatVersion = Version(rev.id.name, data)
+                    val versions = map[it.fileName]
+                    if (versions == null) {
+                        map[it.fileName] = mutableListOf(thatVersion)
+                        continue
+                    }
+                    val lastVersion = versions.last()
+                    if (differenceCount(data, lastVersion.bytes) > 0) versions.add(thatVersion)
                 }
             }
-            if (versions.size > 1) result.add(FileVersions(fileName, versions))
-            walk.dispose()
         }
 
-        return result
+        return map.map { FileVersions(it.key, it.value) }
     }
 
     private fun differenceCount(bytes1: ByteArray, bytes2: ByteArray) : Int {
@@ -77,6 +96,8 @@ object DiffTestDataExtractor {
         }
         return count
     }
+
+    private fun String.changeSeparator() = this.replace("\\", "/")
 }
 
 
