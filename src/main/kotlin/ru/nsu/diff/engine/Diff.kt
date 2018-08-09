@@ -43,6 +43,9 @@ object Diff {
 
     private fun DeltaTreeElement.calculateRanges(fileLines: List<String>) {
         this.calculateLinesRange(fileLines)
-        children.forEach { it.calculateRanges(fileLines) }
+        children.forEach {
+            it.calculateRanges(fileLines)
+            it.identify()
+        }
     }
 }

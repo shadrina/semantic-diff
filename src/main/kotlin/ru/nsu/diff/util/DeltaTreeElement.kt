@@ -9,6 +9,8 @@ class DeltaTreeElement(
         var text: String
 ) {
     lateinit var linesRange: LinesRange
+    val name = type.toString()
+    var id: String? = null
     var parent: DeltaTreeElement? = null
     val children: MutableList<DeltaTreeElement> = arrayListOf()
 
@@ -38,6 +40,23 @@ class DeltaTreeElement(
         val stopLine = startLine + myLines.size - 1
         linesRange = LinesRange(startLine, stopLine)
     }
+    /**
+     * (!) Function is called only on build stage
+     */
+    fun identify() {
+        if (name.contains("REFERENCE_EXPRESSION")
+                || name.contains("DOT_QUALIFIED_EXPRESSION")
+                || name.contains("CALL_EXPRESSION")) {
+            id = children.firstOrNull()?.text ?: text
+            return
+        }
+        children.forEach {
+            if (it.name.contains("IDENTIFIER")) {
+                id = it.text
+                return
+            }
+        }
+    }
 
     fun addChild(child: DeltaTreeElement, i: Int = -1) {
         if (i >= 0) children.add(i, child)
@@ -55,6 +74,10 @@ class DeltaTreeElement(
     }
 
     fun indexOf(child: DeltaTreeElement) = children.indexOf(child)
+
+    fun nodesNumber() : Int = 1 + children.sumBy { it.nodesNumber() }
+
+    fun height() : Int = 1 + (children.map { it.height() }.max() ?: 0)
 
     fun isLeaf() : Boolean {
         if (children.size == 0) return true
