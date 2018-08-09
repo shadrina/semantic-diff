@@ -101,6 +101,7 @@ class BrowseGitRepoPanel(
                                     val selected = cb.selectedItem
                                     val version = chosenFileVersions!!.versions
                                             .first { it.hash.startsWith(selected as String) }
+                                    viewerPanel.file1 = null
                                     viewerPanel.psi1 = createPsiFileFromBytes(version)
                                 }
                             }
@@ -110,6 +111,7 @@ class BrowseGitRepoPanel(
                                     val selected = cb.selectedItem
                                     val version = chosenFileVersions!!.versions
                                             .find { it.hash.startsWith(selected as String) }
+                                    viewerPanel.file2 = null
                                     viewerPanel.psi2 = createPsiFileFromBytes(version)
                                 }
                             }
