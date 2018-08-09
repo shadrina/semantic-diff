@@ -12,7 +12,11 @@ class DiffChunk {
     private val myOperations = mutableListOf<EditOperation>()
 
     fun initType() {
-        if (isPrimitive()) type = myOperations.first().type
+        val currType = myOperations.firstOrNull()?.type ?: return
+        myOperations.forEach {
+            if (it.type != currType) return
+        }
+        type = currType
     }
 
     fun ableToMerge(other: EditOperation) : Boolean {
