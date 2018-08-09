@@ -19,7 +19,9 @@ object EditScriptGenerator {
         bfs(queue, mutableListOf())
         inputTuple.T1.deleteRedundant()
 
-        return if (treesAreIdentical(inputTuple.T1, inputTuple.T2)) script else null
+        println(treesAreIdentical(inputTuple.T1, inputTuple.T2))
+        return script
+        // return if (treesAreIdentical(inputTuple.T1, inputTuple.T2)) script else null
     }
 
     private fun treesAreIdentical(root1: DeltaTreeElement, root2: DeltaTreeElement) =
@@ -96,7 +98,32 @@ object EditScriptGenerator {
         return newDelta
     }
 
-    private fun DeltaTreeElement.findPosition() : Int = this.parent?.indexOf(this) ?: 0
+    /**
+     * this@findPosition --- node from T2
+     * Find rightmost sibling to the left of it
+     * Return sibling's partner index
+     */
+    private fun DeltaTreeElement.findPosition() : Int {
+        val t2Parent = this.parent
+        if (t2Parent === null) return 0
+
+        val realT2idx = t2Parent.indexOf(this)
+        if (realT2idx == 0) return 0
+
+        var siblingToTheLeftIdx = realT2idx - 1
+        var siblingToTheLeft = t2Parent.children[siblingToTheLeftIdx]
+        while (siblingToTheLeftIdx >= 0 && !inputTuple.binaryRelation.containsPairFor(siblingToTheLeft)) {
+            siblingToTheLeft = t2Parent.children[siblingToTheLeftIdx--]
+        }
+        // The node in T1 before which this@findPosition should be
+        val siblingPartner = inputTuple.binaryRelation.getPartner(siblingToTheLeft)
+        val myPartner = inputTuple.binaryRelation.getPartner(this)
+
+        val siblingPartnerT1idx = siblingPartner?.parent?.indexOf(siblingPartner)!!
+        val realT1idx = inputTuple.binaryRelation.getPartner(t2Parent)!!.children.indexOf(myPartner)
+        if (realT1idx == -1) return siblingPartnerT1idx + 1
+        return siblingPartnerT1idx + if (realT1idx < siblingPartnerT1idx) 0 else 1
+    }
 
     private fun alignChildren(elem1: DeltaTreeElement, elem2: DeltaTreeElement) {
         val S1 = elem1.children.filter { inputTuple.binaryRelation.containsPairFor(it) }
