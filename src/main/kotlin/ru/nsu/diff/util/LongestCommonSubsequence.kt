@@ -3,7 +3,7 @@ package ru.nsu.diff.util
 object LongestCommonSubsequence {
     fun <T> find(S1: List<T>, S2: List<T>, equal: (T, T) -> Boolean): List<Pair<T, T>> {
         val lcs = Array(S1.size + 1) { IntArray(S2.size + 1) }
-        val solution = Array(S1.size + 1) { Array(S2.size + 1) { "" } }
+        val solution = Array(S1.size + 1) { _ -> Array(S2.size + 1) { "" } }
 
         for (i in 0..S2.size) {
             lcs[0][i] = 0

@@ -8,7 +8,7 @@ import ru.nsu.diff.util.LongestCommonSubsequence
 import ru.nsu.diff.util.Queue
 
 class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement>) : Matcher {
-    private val equalParameterT = 0.51
+    private val equalParameterT = 0.75
     private var t1Height: Int = 1
     private var t2Height: Int = 1
 
@@ -19,8 +19,8 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement
         val children1 = root1.childrenListInBfsReverseOrder().reversed()
         val children2 = root2.childrenListInBfsReverseOrder().reversed()
 
+        preProcess(children1, children2)
         fastMatch(children1.filter { it.isLeaf() }, children2.filter { it.isLeaf() })
-        preProcess(children1.filter { !it.isLeaf() }, children2.filter { !it.isLeaf() })
         fastMatch(children1.filter { !it.isLeaf() }, children2.filter { !it.isLeaf() })
 
         /*
@@ -68,7 +68,9 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement
      * @param children2 in the in-order traversal of T2 when siblings are visited left-to-right
      */
     private fun fastMatch(children1: List<DeltaTreeElement>, children2: List<DeltaTreeElement>) {
-        val lcs = LongestCommonSubsequence.find(children1, children2, this::equal)
+        val unmatchedChildren1 = children1.filter { !binaryRelation.containsPairFor(it) }
+        val unmatchedChildren2 = children2.filter { !binaryRelation.containsPairFor(it) }
+        val lcs = LongestCommonSubsequence.find(unmatchedChildren1, unmatchedChildren2, this::equal)
         lcs.forEach { binaryRelation.add(it) }
 
         val unmatched = children1.filter { !binaryRelation.containsPairFor(it) }
@@ -82,8 +84,8 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement
 
     private fun postProcess(node1: DeltaTreeElement) {
         val node2 = binaryRelation.getPartner(node1) ?: return
-        node1.children.forEach {
-            val partner = binaryRelation.getPartner(it)
+        node1.children.forEach { child ->
+            val partner = binaryRelation.getPartner(child)
             var candidate: DeltaTreeElement? = null
 
             if (partner === null) {
@@ -92,13 +94,13 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement
                 val node2matchedChildren = node2.children
                         .filter { binaryRelation.containsPairFor(it) }
 
-                val candidateFromUnmatched = it findBestPartnerIn node2unmatchedChildren
-                val candidateFromMatched = it findBestPartnerIn node2matchedChildren
+                val candidateFromUnmatched = child findBestPartnerIn node2unmatchedChildren
+                val candidateFromMatched = child findBestPartnerIn node2matchedChildren
 
                 // Choose the best from candidates
                 if (candidateFromUnmatched === null && candidateFromMatched !== null) {
                     val realPartnerOfCandidate = binaryRelation.getPartner(candidateFromMatched)
-                    if (candidateFromMatched.betterPartnerFrom(it, realPartnerOfCandidate) === it) {
+                    if (candidateFromMatched.betterPartnerFrom(child, realPartnerOfCandidate) === child) {
                         candidate = candidateFromMatched
                     }
 
@@ -106,54 +108,69 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement
                     candidate = candidateFromUnmatched
 
                 } else if (candidateFromMatched !== null && candidateFromUnmatched !== null) {
-                    val better = it.betterPartnerFrom(candidateFromUnmatched, candidateFromMatched)
+                    val better = child.betterPartnerFrom(candidateFromUnmatched, candidateFromMatched)
                     if (better === candidateFromUnmatched) candidate = candidateFromUnmatched
                     else if (better === candidateFromMatched) {
                         val realPartnerOfCandidate = binaryRelation.getPartner(candidateFromMatched)
-                        candidate = if (candidateFromMatched.betterPartnerFrom(it, realPartnerOfCandidate) === it)
+                        candidate = if (candidateFromMatched.betterPartnerFrom(child, realPartnerOfCandidate) === child)
                             candidateFromMatched
                         else candidateFromUnmatched
                     }
                 }
 
             } else if (partner.parent !== node2) {
-                candidate = it findBestPartnerIn node2.children
+                candidate = child findBestPartnerIn node2.children
+
+                // If on this stage there is no candidate, remove that and all
+                // underlying relations which led to that relation
+                if (candidate === null) child.removeRelationsInSubTree()
             }
             if (candidate !== null) {
-                binaryRelation.removePairWith(it)
+                binaryRelation.removePairWith(child)
                 binaryRelation.removePairWith(candidate)
-                binaryRelation.add(it, candidate)
+                binaryRelation.add(child, candidate)
             }
         }
         node1.children.forEach { postProcess(it) }
     }
 
-    private infix fun DeltaTreeElement.findBestPartnerIn(nodes: List<DeltaTreeElement>) : DeltaTreeElement? {
-        val boundaryDistance = this.height() * 1.0 / t1Height * 100
-        val strongBoundaryDistance = 10
+    private fun DeltaTreeElement.removeRelationsInSubTree() {
+        binaryRelation.removePairWith(this)
+        children.forEach { it.removeRelationsInSubTree() }
+    }
 
-        var distance = 100
+    private infix fun DeltaTreeElement.findBestPartnerIn(nodes: List<DeltaTreeElement>) : DeltaTreeElement? {
+        val boundaryPercentage = 0.7
+        val strongBoundaryPercentage = 0.9
+
+        var percentage = .0
         var partner: DeltaTreeElement? = null
         nodes
                 .filter { it.label() == this.label() }
                 .forEach {
-                    val currDistance = EditDistance.levenshtein(this.text, it.text, true)
-                    if (currDistance < distance) {
-                        distance = currDistance
+                    val maxLength = maxOf(this.text.length, it.text.length)
+                    val lcs = LongestCommonSubsequence.find(
+                            this.text.toCharArray().asList(),
+                            it.text.toCharArray().asList(),
+                            fun (c1: Char, c2: Char) = c1 == c2
+                    )
+                    val currPercentage = lcs.size * 1.0 / maxLength
+                    if (currPercentage > percentage) {
+                        percentage = currPercentage
                         partner = it
                     }
                 }
 
         // If element is a leaf, require exact match
         if (this.isLeaf()) {
-            return if (distance == 0) partner else null
+            return if (percentage == 1.0) partner else null
         }
         // If element has id, require either a match of the ids or a very good match of the rest
         if (this.id !== null) {
-            return if (this.id == partner?.id || distance < strongBoundaryDistance) partner else null
+            return if (this.id == partner?.id || percentage > strongBoundaryPercentage) partner else null
         }
 
-        return if (distance < boundaryDistance) partner else null
+        return if (percentage > boundaryPercentage) partner else null
     }
 
     private fun DeltaTreeElement.betterPartnerFrom(node1: DeltaTreeElement?, node2: DeltaTreeElement?)
@@ -172,8 +189,7 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement
         }
         val max = maxOf(x.nodesNumber(), y.nodesNumber())
         val value = common(x, y) * 1.0 / max
-        return x.label() == y.label()
-                && (value > equalParameterT || (x.id != null && y.id != null && x.id == y.id))
+        return x.label() == y.label() && (value > equalParameterT || x.id !== null && x.id == y.id)
     }
 
     private fun common(x: DeltaTreeElement, y: DeltaTreeElement)
