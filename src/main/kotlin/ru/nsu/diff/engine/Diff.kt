@@ -16,9 +16,7 @@ object Diff {
         val binaryRelation: BinaryRelation<DeltaTreeElement> = BinaryRelation()
 
         val deltaTree = buildDeltaTree(root1.node)
-        deltaTree.calculateRanges(root1.text.split("\r\n", "\n"))
         val goldTree = buildDeltaTree(root2.node)
-        goldTree.calculateRanges(root2.text.split("\r\n", "\n"))
         GoodWayMatcher(binaryRelation).match(deltaTree, goldTree)
 
         val script =  EditScriptGenerator.generateScript(InputTuple(deltaTree, goldTree, binaryRelation))
@@ -37,15 +35,7 @@ object Diff {
                 root.addChild(buildDeltaTree(nextChild))
             nextChild = nextChild.treeNext
         }
-
+        root.identify()
         return root
-    }
-
-    private fun DeltaTreeElement.calculateRanges(fileLines: List<String>) {
-        this.calculateLinesRange(fileLines)
-        children.forEach {
-            it.calculateRanges(fileLines)
-            it.identify()
-        }
     }
 }

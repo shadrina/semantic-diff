@@ -5,14 +5,17 @@ import com.intellij.openapi.diff.impl.util.LabeledEditor
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.editor.markup.HighlighterLayer
+import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.ui.JBColor
+import com.intellij.util.DocumentUtil
 import ru.nsu.diff.engine.conversion.DiffChunk
-import ru.nsu.diff.util.LinesRange
 import ru.nsu.diff.view.panels.DiffSide
+import java.awt.Color
 import java.awt.Dimension
 import javax.swing.JLabel
 
@@ -81,20 +84,38 @@ object DiffEditorUtil {
     }
 
     fun paintEditor(editor: EditorEx, chunks: List<DiffChunk>, diffSide: DiffSide) {
-        var linesRange: LinesRange?
+        fun JBColor.littleDarker() = JBColor { Color(this.red - 12, this.green - 12, this.blue - 12) }
+
+        var textRange: TextRange?
         var color: JBColor
         var textAttributes: TextAttributes
 
         for (chunk in chunks) {
-            linesRange = if (diffSide == DiffSide.LEFT) chunk.leftLines else chunk.rightLines
+            textRange = if (diffSide == DiffSide.LEFT) chunk.leftRange else chunk.rightRange
             color = ColorFactory.editorOperationColor(chunk.type)
             textAttributes = TextAttributes(null, color, null, null, 0)
 
-            if (linesRange === null) continue
-            val start = linesRange.startLine
-            val stop = linesRange.stopLine
-            for (i in start..stop) {
-                editor.markupModel.addLineHighlighter(i, HighlighterLayer.CARET_ROW, textAttributes)
+            if (textRange === null) continue
+            val start = textRange.startOffset
+            val stop = textRange.endOffset
+
+            editor.markupModel.addRangeHighlighter(
+                    start,
+                    stop,
+                    HighlighterLayer.CARET_ROW,
+                    textAttributes,
+                    HighlighterTargetArea.LINES_IN_RANGE
+            )
+            if (!DocumentUtil.isAtLineStart(start, editor.document)
+                    && !DocumentUtil.isAtLineEnd(stop, editor.document)) {
+                val ta = TextAttributes(null, color.littleDarker(), null, null, 0)
+                editor.markupModel.addRangeHighlighter(
+                        start,
+                        stop,
+                        HighlighterLayer.CARET_ROW,
+                        ta,
+                        HighlighterTargetArea.EXACT_RANGE
+                )
             }
         }
     }

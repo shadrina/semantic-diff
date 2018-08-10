@@ -1,12 +1,12 @@
 package ru.nsu.diff.engine.conversion
 
+import com.intellij.openapi.util.TextRange
 import ru.nsu.diff.engine.transforming.EditOperation
 import ru.nsu.diff.engine.transforming.EditOperationType
-import ru.nsu.diff.util.LinesRange
 
 class DiffChunk {
-    var leftLines: LinesRange? = null
-    var rightLines: LinesRange? = null
+    var leftRange: TextRange? = null
+    var rightRange: TextRange? = null
 
     var type: EditOperationType? = null
     private val myOperations = mutableListOf<EditOperation>()
@@ -19,29 +19,22 @@ class DiffChunk {
         type = currType
     }
 
+    // TODO: works wrong
     fun ableToMerge(other: EditOperation) : Boolean {
-        if (leftLines === null && rightLines === null) return true
+        val otherLeftRange = other.textRanges.first
+        val otherRightRange = other.textRanges.second
 
-        val otherLeftLines = other.linesRanges.first
-        val otherRightLines = other.linesRanges.second
-        if (leftLines === null && rightLines !== null) {
-            return if (otherRightLines === null && otherLeftLines !== null) rightLines!!.intersectsWith(otherLeftLines)
-            else rightLines!!.intersectsWith(otherRightLines)
-        }
-        if (rightLines === null && leftLines !== null) {
-            return if (otherLeftLines === null && otherRightLines !== null) leftLines!!.intersectsWith(otherRightLines)
-            else leftLines!!.intersectsWith(otherLeftLines)
-        }
-        return leftLines!!.intersectsWith(otherLeftLines) && rightLines!!.intersectsWith(otherRightLines)
+        return leftRange?.intersects(otherLeftRange ?: TextRange.EMPTY_RANGE) ?: true
+                && rightRange?.intersects(otherRightRange ?: TextRange.EMPTY_RANGE) ?: true
     }
 
     fun add(other: EditOperation) {
-        val otherLeftLines = other.linesRanges.first
-        val otherRightLines = other.linesRanges.second
-        if (leftLines == null) leftLines = otherLeftLines
-        else leftLines!!.merge(otherLeftLines)
-        if (rightLines == null) rightLines = otherRightLines
-        else rightLines!!.merge(otherRightLines)
+        val otherLeftRange = other.textRanges.first
+        val otherRightRange = other.textRanges.second
+        if (leftRange == null) leftRange = otherLeftRange
+        else leftRange!!.union(otherLeftRange ?: leftRange!!)
+        if (rightRange == null) rightRange = otherRightRange
+        else rightRange!!.union(otherRightRange ?: rightRange!!)
 
         myOperations.add(other)
     }
@@ -50,10 +43,8 @@ class DiffChunk {
         return """
             CHUNK
             Operations: ${myOperations.map { it.toShortString() }}
-            Line ranges: ${leftLines ?: "-"}, ${rightLines ?: "-"}
+            Text ranges: ${leftRange ?: "-"}, ${rightRange ?: "-"}
 
         """.replaceIndent("")
     }
-
-    private fun isPrimitive() = myOperations.size == 1
 }

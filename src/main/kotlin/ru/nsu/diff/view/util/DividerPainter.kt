@@ -44,11 +44,15 @@ class DividerPainter(val mySplitter: DiffSplitter) : DiffSplitter.Painter {
         g as Graphics2D
 
         for (chunk in chunks) {
-            if (chunk.leftLines == null || chunk.rightLines == null) continue
-            val leftUpper: Double = chunk.leftLines!!.startLine * lineHeight.toDouble()
-            val leftBottom: Double = (chunk.leftLines!!.stopLine + 1) * lineHeight.toDouble()
-            val rightUpper: Double = chunk.rightLines!!.startLine * lineHeight.toDouble()
-            val rightBottom: Double = (chunk.rightLines!!.stopLine + 1) * lineHeight.toDouble()
+            if (chunk.leftRange == null || chunk.rightRange == null) continue
+            val leftUpper = (leftEditor!!.document.getLineNumber(chunk.leftRange!!.startOffset) * lineHeight)
+                    .toDouble()
+            val leftBottom = ((leftEditor!!.document.getLineNumber(chunk.leftRange!!.endOffset) + 1) * lineHeight)
+                    .toDouble()
+            val rightUpper = (rightEditor!!.document.getLineNumber(chunk.rightRange!!.startOffset) * lineHeight)
+                    .toDouble()
+            val rightBottom = ((rightEditor!!.document.getLineNumber(chunk.rightRange!!.endOffset) + 1) * lineHeight)
+                    .toDouble()
 
             val upperCurve = makeCurve(width.toDouble(), leftUpper - currLeftY, rightUpper - currRightY, true)
             val lowerCurve = makeCurve(width.toDouble(), leftBottom - currLeftY, rightBottom - currRightY, false)

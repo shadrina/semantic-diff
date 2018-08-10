@@ -41,7 +41,7 @@ object EditScriptGenerator {
             if (partner == null && currParent != null) {
                 val newNode = curr.copy()
                 val dstNode = inputTuple.binaryRelation.getPartner(currParent)
-                val ranges = Pair(null, curr.linesRange)
+                val ranges = Pair(null, curr.textRange)
                 val insertOperation = EditOperation(INSERT, newNode, dstNode, curr.findPosition(), ranges)
                 script.addAndPerform(insertOperation)
                 partner = newNode
@@ -51,7 +51,7 @@ object EditScriptGenerator {
             } else if (partner != null && currParent != null) {
                 val partnerParent = partner.parent
                 if (partnerParent != null && !inputTuple.binaryRelation.contains(Pair(partnerParent, currParent))) {
-                    val ranges = Pair(partner.linesRange, curr.linesRange)
+                    val ranges = Pair(partner.textRange, curr.textRange)
                     val moveOperation = EditOperation(MOVE, partner, partnerParent, curr.findPosition(), ranges)
                     script.addAndPerform(moveOperation)
                 }
@@ -67,7 +67,7 @@ object EditScriptGenerator {
         val deleteOps = mutableListOf<EditOperation>()
         this.children.forEach {
             if (!inputTuple.binaryRelation.containsPairFor(it)) {
-                val ranges = Pair(it.linesRange, null)
+                val ranges = Pair(it.textRange, null)
                 val deleteOperation = EditOperation(DELETE, it, null, null, ranges)
                 deleteOps.add(deleteOperation)
             } else it.deleteRedundant()
@@ -94,6 +94,8 @@ object EditScriptGenerator {
 
     private fun DeltaTreeElement.copy() : DeltaTreeElement {
         val newDelta = DeltaTreeElement(this.myPsi, this.type, this.text)
+        newDelta.id = this.id
+
         this.children.forEach { newDelta.addChild(it.copy()) }
         return newDelta
     }
@@ -139,7 +141,7 @@ object EditScriptGenerator {
         unmatched.forEach {
             val k = it.second.findPosition()
             val dstNode = inputTuple.binaryRelation.getPartner(it.second.parent!!)
-            val ranges = Pair(it.first.linesRange, it.second.linesRange)
+            val ranges = Pair(it.first.textRange, it.second.textRange)
             val moveOperation = EditOperation(MOVE, it.first, dstNode, k, ranges)
             script.addAndPerform(moveOperation)
         }

@@ -1,5 +1,6 @@
 package ru.nsu.diff.util
 
+import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.tree.IElementType
 
@@ -8,38 +9,12 @@ class DeltaTreeElement(
         val type: IElementType,
         var text: String
 ) {
-    lateinit var linesRange: LinesRange
     val name = type.toString()
     var id: String? = null
     var parent: DeltaTreeElement? = null
     val children: MutableList<DeltaTreeElement> = arrayListOf()
+    val textRange: TextRange = myPsi.textRange
 
-    /**
-     * (!) Function is called only on build stage
-     */
-    fun calculateLinesRange(fileLines: List<String>) {
-        val myIndex = parent?.indexOf(this) ?: 0
-        val leftSibling = parent?.children?.getOrNull(myIndex - 1)
-        val leftSiblingLines = leftSibling?.text?.split("\r\n", "\n")
-
-        val parentStartLine = parent?.linesRange?.startLine ?: 0
-        val parentStopLine =  parent?.linesRange?.stopLine ?: fileLines.lastIndex
-        val linesToSearch: MutableList<String> = fileLines.subList(parentStartLine, parentStopLine + 1).toMutableList()
-
-        var parentOffset = 0
-        for (i in 0 until (leftSiblingLines?.size ?: -1)) {
-            if (leftSiblingLines!![i] == linesToSearch.first()) {
-                linesToSearch.removeAt(0)
-                parentOffset++
-            }
-        }
-
-        val myLines = text.split("\r\n", "\n")
-        val startOffset = parentStartLine + parentOffset
-        val startLine = startOffset + linesToSearch.indexOfFirst { it.contains(myLines[0]) }
-        val stopLine = startLine + myLines.size - 1
-        linesRange = LinesRange(startLine, stopLine)
-    }
     /**
      * (!) Function is called only on build stage
      */
@@ -51,7 +26,7 @@ class DeltaTreeElement(
             return
         }
         children.forEach {
-            if (it.name.contains("IDENTIFIER")) {
+            if (it.name == "IDENTIFIER") {
                 id = it.text
                 return
             }
@@ -92,8 +67,6 @@ class DeltaTreeElement(
         }
         parent?.refactorText()
     }
-
-    fun psiRange() = myPsi.textRange
 
     override fun toString(): String {
         return "$type"

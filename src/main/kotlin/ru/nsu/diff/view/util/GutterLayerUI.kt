@@ -1,6 +1,7 @@
 package ru.nsu.diff.view.util
 
 import com.intellij.openapi.editor.ex.EditorEx
+import com.intellij.openapi.util.TextRange
 import com.intellij.ui.JBColor
 
 import java.awt.Graphics
@@ -8,7 +9,6 @@ import javax.swing.JComponent
 import javax.swing.plaf.LayerUI
 
 import ru.nsu.diff.engine.conversion.DiffChunk
-import ru.nsu.diff.util.LinesRange
 import ru.nsu.diff.view.panels.DiffSide
 
 /**
@@ -40,7 +40,7 @@ class GutterLayerUI(
         super.paint(g, c)
         if (g == null) return
 
-        var linesRange: LinesRange?
+        var textRange: TextRange?
         val lineHeight = editor.lineHeight
         val gutterWidth = editor.gutterComponentEx.width
         var gutterColor: JBColor
@@ -51,12 +51,12 @@ class GutterLayerUI(
         }
 
         for (chunk in chunks) {
-            linesRange = if (side == DiffSide.LEFT) chunk.leftLines else chunk.rightLines
+            textRange = if (side == DiffSide.LEFT) chunk.leftRange else chunk.rightRange
             gutterColor = ColorFactory.dividerOperationColor(chunk.type)
 
-            if (linesRange === null) continue
-            val start = linesRange.startLine
-            val stop = linesRange.stopLine
+            if (textRange === null) continue
+            val start = editor.document.getLineNumber(textRange.startOffset)
+            val stop = editor.document.getLineNumber(textRange.endOffset)
 
             for (i in start..stop) {
                 g.color = gutterColor
