@@ -2,6 +2,7 @@ package ru.nsu.diff.engine.matching
 
 import com.intellij.psi.tree.IElementType
 import com.intellij.util.text.EditDistance
+
 import ru.nsu.diff.util.BinaryRelation
 import ru.nsu.diff.util.DeltaTreeElement
 import ru.nsu.diff.util.LongestCommonSubsequence
@@ -56,6 +57,7 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement
                 val fromT1 = withLabel1.filter { it.id == id }
                 val fromT2 = withLabel2.filter { it.id == id }
                 if (fromT1.size == 1 && fromT2.size == 1) {
+                    // TODO: here we can match all their children too
                     binaryRelation.add(Pair(fromT1.first(), fromT2.first()))
                 }
             }
@@ -82,6 +84,9 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement
         }
     }
 
+    /**
+     * Try to find the partner for unmatched and detect future erroneous MOVEs
+     */
     private fun postProcess(node1: DeltaTreeElement) {
         val node2 = binaryRelation.getPartner(node1) ?: return
         node1.children.forEach { child ->
@@ -140,7 +145,8 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement
     }
 
     private infix fun DeltaTreeElement.findBestPartnerIn(nodes: List<DeltaTreeElement>) : DeltaTreeElement? {
-        val boundaryPercentage = 0.7
+        // TODO: Boundary percentage should depend on the height of the subtree
+        val boundaryPercentage = 1 - this.height() * 1.0 / t1Height
         val strongBoundaryPercentage = 0.9
 
         var percentage = .0
