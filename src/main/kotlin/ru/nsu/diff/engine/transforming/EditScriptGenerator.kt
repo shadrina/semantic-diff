@@ -24,10 +24,10 @@ object EditScriptGenerator {
         // return if (treesAreIdentical(inputTuple.T1, inputTuple.T2)) script else null
     }
 
-    private fun treesAreIdentical(root1: DeltaTreeElement, root2: DeltaTreeElement) =
-            root1.text.removeWhiteSpace() == root2.text.removeWhiteSpace()
-    private fun String.removeWhiteSpace() = this
-            .replace(Regex("[\r\n ]"), "")
+    private fun treesAreIdentical(root1: DeltaTreeElement, root2: DeltaTreeElement)
+            = root1.text.removeWhiteSpace() == root2.text.removeWhiteSpace()
+
+    private fun String.removeWhiteSpace() = this.replace(Regex("[\r\n\t ]"), "")
 
     private fun bfs(queue: Queue<DeltaTreeElement>, visited: MutableList<DeltaTreeElement>) {
         while (!queue.isEmpty()) {
