@@ -82,6 +82,7 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
                 val jLayer = JLayer<JComponent>(labeled, leftLayerUI)
 
                 splitter.firstComponent = jLayer
+                painter.leftEditor = leftEditor
             }
             DiffSide.RIGHT -> {
                 rightEditor =
@@ -94,6 +95,7 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
                 val jLayer = JLayer<JComponent>(labeled, rightLayerUI)
 
                 splitter.secondComponent = jLayer
+                painter.rightEditor = rightEditor
             }
         }
     }
@@ -109,7 +111,7 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
             DiffDialogNotifier.showDialog(DiffMessageType.NO_FILES)
             return
         }
-        if (fileType1 !== fileType2) {
+        if (fileType1 != fileType2) {
             DiffDialogNotifier.showDialog(DiffMessageType.DIFFERENT_TYPES)
             return
         }
@@ -125,7 +127,7 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
 
         val chunks = Diff.diff(psiElement1, psiElement2)
         when {
-            chunks == null -> DiffDialogNotifier.showDialog(DiffMessageType.UNABLE_TO_DIFF)
+            chunks === null -> DiffDialogNotifier.showDialog(DiffMessageType.UNABLE_TO_DIFF)
             chunks.isEmpty() -> DiffDialogNotifier.showDialog(DiffMessageType.IDENTICAL_FILES)
             else -> chunks.render()
         }
