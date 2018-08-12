@@ -98,6 +98,7 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
                 painter.rightEditor = rightEditor
             }
         }
+        painter.chunks = listOf()
     }
 
     fun showResult() {
