@@ -9,24 +9,27 @@ class DeltaTreeElement(
         val type: IElementType,
         var text: String
 ) {
-    val name = type.toString()
-    var id: String? = null
-    var parent: DeltaTreeElement? = null
+    val name = type.toString().toLowerCase()
     val children: MutableList<DeltaTreeElement> = arrayListOf()
     val textRange: TextRange = myPsi.textRange
+
+    var id: String? = null
+    var parent: DeltaTreeElement? = null
+    var contextStack: List<ContextInfo> = listOf()
 
     /**
      * (!) Function is called only on build stage
      */
     fun identify() {
-        if (name.contains("REFERENCE_EXPRESSION")
-                || name.contains("DOT_QUALIFIED_EXPRESSION")
-                || name.contains("CALL_EXPRESSION")) {
+        // TODO: Would like to remove that part
+        if (name.contains("reference_expression")
+                || name.contains("dot_qualified_expression")
+                || name.contains("call_expression")) {
             id = children.firstOrNull()?.text ?: text
             return
         }
         children.forEach {
-            if (it.name == "IDENTIFIER") {
+            if (it.name == "identifier") {
                 id = it.text
                 return
             }
@@ -34,7 +37,7 @@ class DeltaTreeElement(
     }
 
     fun addChild(child: DeltaTreeElement, i: Int = -1) {
-        if (i >= 0) children.add(i, child)
+        if (i >= 0 && i in 0..children.size) children.add(i, child)
         else children.add(child)
 
         child.parent = this
@@ -47,6 +50,10 @@ class DeltaTreeElement(
         if (i in 0 until children.size)
         children.removeAt(i)
     }
+
+    fun contextLevel() = contextStack.last().contextLevel
+
+    fun contextProvider() = contextStack.last().contextProvider
 
     fun indexOf(child: DeltaTreeElement) = children.indexOf(child)
 

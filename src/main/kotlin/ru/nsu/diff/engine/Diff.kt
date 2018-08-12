@@ -7,19 +7,21 @@ import ru.nsu.diff.engine.conversion.Converter
 import ru.nsu.diff.engine.conversion.DiffChunk
 
 import ru.nsu.diff.engine.matching.GoodWayMatcher
-import ru.nsu.diff.engine.transforming.EditScript
 import ru.nsu.diff.engine.transforming.EditScriptGenerator
 import ru.nsu.diff.util.*
 
 object Diff {
     fun diff(root1: PsiElement, root2: PsiElement) : List<DiffChunk>? {
-        val binaryRelation: BinaryRelation<DeltaTreeElement> = BinaryRelation()
+        val relation: BinaryRelation<DeltaTreeElement> = BinaryRelation()
 
         val deltaTree = buildDeltaTree(root1.node)
         val goldTree = buildDeltaTree(root2.node)
-        GoodWayMatcher(binaryRelation).match(deltaTree, goldTree)
+        deltaTree.setContext(mutableListOf(ContextInfo(ContextLevel.TOP_LEVEL, deltaTree)))
+        goldTree.setContext(mutableListOf(ContextInfo(ContextLevel.TOP_LEVEL, deltaTree)))
 
-        val script =  EditScriptGenerator.generateScript(InputTuple(deltaTree, goldTree, binaryRelation))
+        GoodWayMatcher(relation).match(deltaTree, goldTree)
+
+        val script =  EditScriptGenerator.generateScript(InputTuple(deltaTree, goldTree, relation))
         return if (script !== null) Converter.convert(script) else null
     }
 
@@ -35,7 +37,27 @@ object Diff {
                 root.addChild(buildDeltaTree(nextChild))
             nextChild = nextChild.treeNext
         }
+
         root.identify()
         return root
+    }
+
+    private fun DeltaTreeElement.setContext(currentContext: List<ContextInfo>) {
+        this.contextStack = currentContext
+
+        var contextLevel = currentContext.lastOrNull()?.contextLevel
+        val contextProvider = this
+
+        if (this.name.contains("class")) contextLevel = ContextLevel.CLASS_MEMBER
+        if (this.name.contains("fun"))   contextLevel = ContextLevel.LOCAL
+        if (this.name.contains("expression") || this.name.contains("assignment"))
+            contextLevel = ContextLevel.EXPRESSION
+
+        val newContext = currentContext.toMutableList()
+        if (contextLevel != currentContext.lastOrNull()?.contextLevel) {
+            newContext.add(ContextInfo(contextLevel!!, contextProvider))
+        }
+
+        children.forEach { it.setContext(newContext) }
     }
 }

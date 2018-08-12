@@ -2,13 +2,24 @@ package ru.nsu.diff.engine.matching
 
 import com.intellij.psi.tree.IElementType
 import com.intellij.util.text.EditDistance
+import ru.nsu.diff.util.ContextLevel.*
+import ru.nsu.diff.util.*
 
-import ru.nsu.diff.util.BinaryRelation
-import ru.nsu.diff.util.DeltaTreeElement
-import ru.nsu.diff.util.LongestCommonSubsequence
-import ru.nsu.diff.util.Queue
+infix fun ContextLevel.to(that: ContextLevel) = Pair(this, that)
+val possibleContextLevelChanges = listOf(
+        TOP_LEVEL to TOP_LEVEL,
+        TOP_LEVEL to CLASS_MEMBER,
+        TOP_LEVEL to LOCAL,
+        CLASS_MEMBER to CLASS_MEMBER,
+        CLASS_MEMBER to TOP_LEVEL,
+        CLASS_MEMBER to LOCAL,
+        LOCAL to LOCAL,
+        LOCAL to CLASS_MEMBER,
+        EXPRESSION to EXPRESSION,
+        EXPRESSION to LOCAL
+)
 
-class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement>) : Matcher {
+class GoodWayMatcher(private val relation: BinaryRelation<DeltaTreeElement>) : Matcher {
     private val equalParameterT = 0.75
     private var t1Height: Int = 1
     private var t2Height: Int = 1
@@ -25,11 +36,11 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement
         fastMatch(children1.filter { !it.isLeaf() }, children2.filter { !it.isLeaf() })
 
         /*
-            TODO: If binaryRelation contains one of roots, we need to create dummy roots for both trees
-            TODO: and add them to binaryRelation
+            TODO: If relation contains one of roots, we need to create dummy roots for both trees
+            TODO: and add them to relation
          */
-        if (!binaryRelation.containsPairFor(root1) && !binaryRelation.containsPairFor(root2)) {
-            binaryRelation.add(root1, root2)
+        if (!relation.containsPairFor(root1) && !relation.containsPairFor(root2)) {
+            relation.add(root1, root2)
         }
 
         postProcess(root1)
@@ -57,8 +68,8 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement
                 val fromT1 = withLabel1.filter { it.id == id }
                 val fromT2 = withLabel2.filter { it.id == id }
                 if (fromT1.size == 1 && fromT2.size == 1) {
-                    // TODO: here we can match all their children too
-                    binaryRelation.add(Pair(fromT1.first(), fromT2.first()))
+                    relation.add(Pair(fromT1.first(), fromT2.first()))
+                    // TODO: Match all their children too
                 }
             }
         }
@@ -70,16 +81,22 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement
      * @param children2 in the in-order traversal of T2 when siblings are visited left-to-right
      */
     private fun fastMatch(children1: List<DeltaTreeElement>, children2: List<DeltaTreeElement>) {
-        val unmatchedChildren1 = children1.filter { !binaryRelation.containsPairFor(it) }
-        val unmatchedChildren2 = children2.filter { !binaryRelation.containsPairFor(it) }
+        val unmatchedChildren1 = children1.filter { !relation.containsPairFor(it) }
+        val unmatchedChildren2 = children2.filter { !relation.containsPairFor(it) }
         val lcs = LongestCommonSubsequence.find(unmatchedChildren1, unmatchedChildren2, this::equal)
-        lcs.forEach { binaryRelation.add(it) }
+        lcs.forEach { pair ->
+            if (possibleContextLevelChanges.any { it == pair.first.contextLevel() to pair.second.contextLevel() })
+                relation.add(pair)
+        }
 
-        val unmatched = children1.filter { !binaryRelation.containsPairFor(it) }
+        val unmatched = children1.filter { !relation.containsPairFor(it) }
         unmatched.forEach { x ->
             children2.forEach { y ->
-                if (equal(x, y) && !binaryRelation.containsPairFor(y))
-                    binaryRelation.add(x, y)
+                val from = x.contextLevel()
+                val to = y.contextLevel()
+                if (equal(x, y)
+                        && !relation.containsPairFor(y)
+                        && possibleContextLevelChanges.any { it == from to to }) relation.add(x, y)
             }
         }
     }
@@ -88,23 +105,23 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement
      * Try to find the partner for unmatched and detect future erroneous MOVEs
      */
     private fun postProcess(node1: DeltaTreeElement) {
-        val node2 = binaryRelation.getPartner(node1) ?: return
+        val node2 = relation.getPartner(node1) ?: return
         node1.children.forEach { child ->
-            val partner = binaryRelation.getPartner(child)
+            val partner = relation.getPartner(child)
             var candidate: DeltaTreeElement? = null
 
             if (partner === null) {
                 val node2unmatchedChildren = node2.children
-                        .filter { !binaryRelation.containsPairFor(it) }
+                        .filter { !relation.containsPairFor(it) }
                 val node2matchedChildren = node2.children
-                        .filter { binaryRelation.containsPairFor(it) }
+                        .filter { relation.containsPairFor(it) }
 
                 val candidateFromUnmatched = child findBestPartnerIn node2unmatchedChildren
                 val candidateFromMatched = child findBestPartnerIn node2matchedChildren
 
                 // Choose the best from candidates
                 if (candidateFromUnmatched === null && candidateFromMatched !== null) {
-                    val realPartnerOfCandidate = binaryRelation.getPartner(candidateFromMatched)
+                    val realPartnerOfCandidate = relation.getPartner(candidateFromMatched)
                     if (candidateFromMatched.betterPartnerFrom(child, realPartnerOfCandidate) === child) {
                         candidate = candidateFromMatched
                     }
@@ -116,7 +133,7 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement
                     val better = child.betterPartnerFrom(candidateFromUnmatched, candidateFromMatched)
                     if (better === candidateFromUnmatched) candidate = candidateFromUnmatched
                     else if (better === candidateFromMatched) {
-                        val realPartnerOfCandidate = binaryRelation.getPartner(candidateFromMatched)
+                        val realPartnerOfCandidate = relation.getPartner(candidateFromMatched)
                         candidate = if (candidateFromMatched.betterPartnerFrom(child, realPartnerOfCandidate) === child)
                             candidateFromMatched
                         else candidateFromUnmatched
@@ -129,18 +146,26 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement
                 // If on this stage there is no candidate, remove that and all
                 // underlying relations which led to that relation
                 if (candidate === null) child.removeRelationsInSubTree()
+
+            } else {
+                val from = child.contextProvider()
+                val to = partner.contextProvider()
+
+                if (!relation.contains(Pair(from, to))) {
+                    candidate = child findBestPartnerIn node2.children
+                }
             }
             if (candidate !== null) {
-                binaryRelation.removePairWith(child)
-                binaryRelation.removePairWith(candidate)
-                binaryRelation.add(child, candidate)
+                relation.removePairWith(child)
+                relation.removePairWith(candidate)
+                relation.add(child, candidate)
             }
         }
         node1.children.forEach { postProcess(it) }
     }
 
     private fun DeltaTreeElement.removeRelationsInSubTree() {
-        binaryRelation.removePairWith(this)
+        relation.removePairWith(this)
         children.forEach { it.removeRelationsInSubTree() }
     }
 
@@ -161,7 +186,8 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement
                             fun (c1: Char, c2: Char) = c1 == c2
                     )
                     val currPercentage = lcs.size * 1.0 / maxLength
-                    if (currPercentage > percentage) {
+                    if (currPercentage > percentage
+                            && relation.contains(Pair(this.contextProvider(), it.contextProvider()))) {
                         percentage = currPercentage
                         partner = it
                     }
@@ -199,7 +225,7 @@ class GoodWayMatcher(private val binaryRelation: BinaryRelation<DeltaTreeElement
     }
 
     private fun common(x: DeltaTreeElement, y: DeltaTreeElement)
-            = binaryRelation.pairs
+            = relation.pairs
             .filter { it.first haveParent x && it.second haveParent y }
             .count()
 
