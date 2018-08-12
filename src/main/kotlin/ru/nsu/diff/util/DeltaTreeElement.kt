@@ -15,19 +15,12 @@ class DeltaTreeElement(
 
     var id: String? = null
     var parent: DeltaTreeElement? = null
-    var contextStack: List<ContextInfo> = listOf()
+    var contextLevel: ContextLevel = ContextLevel.EMPTY_CONTEXT
 
     /**
      * (!) Function is called only on build stage
      */
     fun identify() {
-        // TODO: Would like to remove that part
-        if (name.contains("reference_expression")
-                || name.contains("dot_qualified_expression")
-                || name.contains("call_expression")) {
-            id = children.firstOrNull()?.text ?: text
-            return
-        }
         children.forEach {
             if (it.name == "identifier") {
                 id = it.text
@@ -50,10 +43,6 @@ class DeltaTreeElement(
         if (i in 0 until children.size)
         children.removeAt(i)
     }
-
-    fun contextLevel() = contextStack.last().contextLevel
-
-    fun contextProvider() = contextStack.last().contextProvider
 
     fun indexOf(child: DeltaTreeElement) = children.indexOf(child)
 

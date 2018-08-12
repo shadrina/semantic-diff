@@ -6,7 +6,7 @@ import com.intellij.psi.PsiWhiteSpace
 import ru.nsu.diff.engine.conversion.Converter
 import ru.nsu.diff.engine.conversion.DiffChunk
 
-import ru.nsu.diff.engine.matching.GoodWayMatcher
+import ru.nsu.diff.engine.matching.MatchingManager
 import ru.nsu.diff.engine.transforming.EditScriptGenerator
 import ru.nsu.diff.util.*
 
@@ -16,10 +16,10 @@ object Diff {
 
         val deltaTree = buildDeltaTree(root1.node)
         val goldTree = buildDeltaTree(root2.node)
-        deltaTree.setContext(mutableListOf(ContextInfo(ContextLevel.TOP_LEVEL, deltaTree)))
-        goldTree.setContext(mutableListOf(ContextInfo(ContextLevel.TOP_LEVEL, deltaTree)))
+        deltaTree.setContext(ContextLevel.TOP_LEVEL)
+        goldTree.setContext(ContextLevel.TOP_LEVEL)
 
-        GoodWayMatcher(relation).match(deltaTree, goldTree)
+        MatchingManager(relation).match(deltaTree, goldTree)
 
         val script =  EditScriptGenerator.generateScript(InputTuple(deltaTree, goldTree, relation))
         return if (script !== null) Converter.convert(script) else null
@@ -42,22 +42,17 @@ object Diff {
         return root
     }
 
-    private fun DeltaTreeElement.setContext(currentContext: List<ContextInfo>) {
-        this.contextStack = currentContext
+    private fun DeltaTreeElement.setContext(currentContextLevel: ContextLevel) {
+        this.contextLevel = currentContextLevel
 
-        var contextLevel = currentContext.lastOrNull()?.contextLevel
-        val contextProvider = this
+        var newContextLevel = currentContextLevel
 
-        if (this.name.contains("class")) contextLevel = ContextLevel.CLASS_MEMBER
-        if (this.name.contains("fun"))   contextLevel = ContextLevel.LOCAL
+        if (this.name.contains("class")) newContextLevel = ContextLevel.CLASS_MEMBER
+        if (this.name.contains("fun"))   newContextLevel = ContextLevel.LOCAL
+        // TODO: Lot of variants here
         if (this.name.contains("expression") || this.name.contains("assignment"))
-            contextLevel = ContextLevel.EXPRESSION
+            newContextLevel = ContextLevel.EXPRESSION
 
-        val newContext = currentContext.toMutableList()
-        if (contextLevel != currentContext.lastOrNull()?.contextLevel) {
-            newContext.add(ContextInfo(contextLevel!!, contextProvider))
-        }
-
-        children.forEach { it.setContext(newContext) }
+        children.forEach { it.setContext(newContextLevel) }
     }
 }
