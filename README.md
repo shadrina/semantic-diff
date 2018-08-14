@@ -12,7 +12,7 @@ In this case, our task is just to compute a minimal set of transformations, by m
 Matching nodes (calculating binary relation `M`) can be done in different ways, but we want to use the fastest one.
 
 We also need to take into account the following:
-  -  Minimal edit script is sometimes suboptimal solution. In some cases it is better to split `MOVE` into separate `INSERT` and `DELETE`.
+ - Minimal edit script is sometimes suboptimal solution. In some cases it is better to split `MOVE` into separate `INSERT` and `DELETE`.
  - Analyzed data consists of tokens, which are almost always not unique. A single node can be matched in several ways.
 
 To achieve the most accurate result and consider all of the above, let's split matching stage into 3 parts:
@@ -22,7 +22,7 @@ Match identified nodes (and their direct children), e.g. classes, named function
 ### FastMatch
 Proceeding bottom-up match nodes by searching for the longest common subsequence. Here it is necessary to consider the contexts compatibility.
 ### Postprocessing
-Proceeding top-down check every pair of nodes belongs to the relation:
+Proceeding top-down check:
 - If node is unmatched, search for the partner in parent's partner children.
 - If parents of matched nodes are matched with each other, try to find better partners for the nodes.
 
