@@ -13,42 +13,63 @@ val possibleContextLevelChanges = listOf(
         CLASS_MEMBER to LOCAL,
         LOCAL to LOCAL,
         LOCAL to CLASS_MEMBER,
+        LOCAL to EXPRESSION,
         EXPRESSION to EXPRESSION,
         EXPRESSION to LOCAL
 )
 
 class FastMatcher(private val relation: BinaryRelation<DeltaTreeElement>) : Matcher {
-    private val equalParameterT = 0.75
+    private val equalParameterT = 0.999
 
-    /**
-     * @param children1 in the in-order traversal of T1 when siblings are visited left-to-right
-     * @param children2 in the in-order traversal of T2 when siblings are visited left-to-right
-     */
-    fun match(children1: List<DeltaTreeElement>, children2: List<DeltaTreeElement>) {
-        val unmatchedChildren1 = children1.filter { !relation.containsPairFor(it) }
-        val unmatchedChildren2 = children2.filter { !relation.containsPairFor(it) }
-        val lcs = LongestCommonSubsequence.find(unmatchedChildren1, unmatchedChildren2, this::equal)
-        lcs.forEach { pair ->
-            if (contextsCompatible(pair.first, pair.second))
-                relation.add(pair)
-        }
+    fun match(nodes1: List<DeltaTreeElement>, nodes2: List<DeltaTreeElement>) {
+        val nodesToMatch1 = nodes1.filter { it.isLeaf() && !relation.containsPairFor(it) }.toMutableList()
+        val nodesToMatch2 = nodes2.filter { it.isLeaf() && !relation.containsPairFor(it) }.toMutableList()
 
-        val unmatched = children1.filter { !relation.containsPairFor(it) }
-        unmatched.forEach { x ->
-            children2.forEach { y ->
-                if (equal(x, y) && !relation.containsPairFor(y) && contextsCompatible(x, y))
-                    relation.add(x, y)
+        while (!nodesToMatch1.isEmpty() || !nodesToMatch2.isEmpty()) {
+            val lcs = LongestCommonSubsequence.find(nodesToMatch1, nodesToMatch2, this::equal)
+
+            val saved1 = nodesToMatch1.toList()
+            val saved2 = nodesToMatch2.toList()
+            nodesToMatch1.clear()
+            nodesToMatch2.clear()
+
+            lcs.forEach { relation.add(it) }
+
+            val unmatched = saved1.filter { !relation.containsPairFor(it) }
+            val matchedFromUnmatched = mutableListOf<Pair<DeltaTreeElement, DeltaTreeElement>>()
+            unmatched.forEach { x ->
+                val candidates = saved2.filter { y -> equal(x, y) && !relation.containsPairFor(y) }
+                if (candidates.size == 1) {
+                    val y = candidates.first()
+                    relation.add(Pair(x, y))
+                    matchedFromUnmatched.add(Pair(x, y))
+                }
+            }
+
+            (lcs + matchedFromUnmatched).forEach { pair ->
+                val parent1 = pair.first.parent
+                val parent2 = pair.second.parent
+                if (parent1 !== null && !nodesToMatch1.contains(parent1) && !relation.containsPairFor(parent1)
+                        && parent1.allChildrenMatched())
+                    nodesToMatch1.add(parent1)
+                if (parent2 !== null && !nodesToMatch2.contains(parent2) && !relation.containsPairFor(parent2)
+                        && parent2.allChildrenMatched())
+                    nodesToMatch2.add(parent2)
             }
         }
     }
 
+    private fun DeltaTreeElement.allChildrenMatched() = children.all { relation.containsPairFor(it) }
+
     private fun equal(x: DeltaTreeElement, y: DeltaTreeElement) : Boolean {
         if (x.isLeaf() && y.isLeaf()) {
-            return x.label() == y.label() && x.value() == y.value()
+            return x.label() == y.label() && x.value() == y.value() && contextsCompatible(x, y)
         }
         val max = maxOf(x.nodesNumber(), y.nodesNumber())
-        val value = common(x, y) * 1.0 / max
-        return x.label() == y.label() && (value > equalParameterT || x.id !== null && x.id == y.id)
+        val value = common(x, y) * 1.0 / (max - 1)
+        return x.label() == y.label()
+                && (value > equalParameterT || x.id !== null && x.id == y.id)
+                && contextsCompatible(x, y)
     }
 
     private fun common(x: DeltaTreeElement, y: DeltaTreeElement)

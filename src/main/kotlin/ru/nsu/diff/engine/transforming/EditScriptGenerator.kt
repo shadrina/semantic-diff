@@ -19,13 +19,11 @@ object EditScriptGenerator {
         bfs(queue, mutableListOf())
         inputTuple.T1.deleteRedundant()
 
-        println(treesAreIdentical(inputTuple.T1, inputTuple.T2))
-        return script
-        // return if (treesAreIdentical(inputTuple.T1, inputTuple.T2)) script else null
+        return if (treesAreIdentical(inputTuple.T1, inputTuple.T2)) script else null
     }
 
-    private fun treesAreIdentical(root1: DeltaTreeElement, root2: DeltaTreeElement)
-            = root1.text.removeWhiteSpace() == root2.text.removeWhiteSpace()
+    private fun treesAreIdentical(root1: DeltaTreeElement, root2: DeltaTreeElement) =
+            root1.text.removeWhiteSpace() == root2.text.removeWhiteSpace()
 
     private fun String.removeWhiteSpace() = this.replace(Regex("[\r\n\t ]"), "")
 
@@ -38,21 +36,22 @@ object EditScriptGenerator {
             var partner = inputTuple.relation.getPartner(curr)
 
             // Insert-phase
-            if (partner == null && currParent != null) {
-                val newNode = curr.copy()
+            if (partner === null && currParent !== null) {
+                val newNode = curr.nodeCopy()
                 val dstNode = inputTuple.relation.getPartner(currParent)
                 val ranges = Pair(null, curr.textRange)
                 val insertOperation = EditOperation(INSERT, newNode, dstNode, curr.findPosition(), ranges)
                 script.addAndPerform(insertOperation)
                 partner = newNode
-                matchAllNodes(newNode, curr)
+                inputTuple.relation.add(newNode, curr)
 
             // Move-phase
-            } else if (partner != null && currParent != null) {
+            } else if (partner !== null && currParent !== null) {
                 val partnerParent = partner.parent
                 if (partnerParent != null && !inputTuple.relation.contains(Pair(partnerParent, currParent))) {
                     val ranges = Pair(partner.textRange, curr.textRange)
-                    val moveOperation = EditOperation(MOVE, partner, partnerParent, curr.findPosition(), ranges)
+                    val dstNode = inputTuple.relation.getPartner(currParent)
+                    val moveOperation = EditOperation(MOVE, partner, dstNode, curr.findPosition(), ranges)
                     script.addAndPerform(moveOperation)
                 }
             }
@@ -77,26 +76,11 @@ object EditScriptGenerator {
         }
     }
 
-    private fun matchAllNodes(x: DeltaTreeElement, y: DeltaTreeElement) {
-        inputTuple.relation.add(x, y)
-
-        var index = 0
-        var nextChildX = x.children.getOrNull(index)
-        var nextChildY = y.children.getOrNull(index)
-        while (nextChildX != null && nextChildY != null) {
-            matchAllNodes(nextChildX, nextChildY)
-
-            index++
-            nextChildX = x.children.getOrNull(index)
-            nextChildY = y.children.getOrNull(index)
-        }
-    }
-
-    private fun DeltaTreeElement.copy() : DeltaTreeElement {
+    private fun DeltaTreeElement.nodeCopy() : DeltaTreeElement {
         val newDelta = DeltaTreeElement(this.myPsi, this.type, this.text)
         newDelta.id = this.id
+        newDelta.contextLevel = this.contextLevel
 
-        this.children.forEach { newDelta.addChild(it.copy()) }
         return newDelta
     }
 

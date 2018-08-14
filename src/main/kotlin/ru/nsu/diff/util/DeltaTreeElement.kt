@@ -50,6 +50,14 @@ class DeltaTreeElement(
 
     fun height() : Int = 1 + (children.map { it.height() }.max() ?: 0)
 
+    fun depth() : Int = 1 + (parent?.depth() ?: 0)
+
+    fun nodes() : MutableList<DeltaTreeElement> {
+        val list = mutableListOf(this)
+        children.forEach { list.addAll(it.nodes()) }
+        return list
+    }
+
     fun isLeaf() : Boolean {
         if (children.size == 0) return true
         if (children.size == 1) return children[0].isLeaf()
@@ -64,7 +72,5 @@ class DeltaTreeElement(
         parent?.refactorText()
     }
 
-    override fun toString(): String {
-        return "$type"
-    }
+    override fun toString() = type.toString()
 }
