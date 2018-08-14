@@ -6,20 +6,14 @@ import ru.nsu.diff.util.DeltaTreeElement
 
 class Preprocessor(private val relation: BinaryRelation<DeltaTreeElement>) : Matcher {
     fun match(children1: List<DeltaTreeElement>, children2: List<DeltaTreeElement>) {
-        val labels = mutableListOf<IElementType>()
-        children1
-                .filter { it.id !== null }
-                .forEach { if (!labels.contains(it.label())) labels.add(it.label()) }
+        matchUniqueInternals(children1, children2)
 
+        val labels = children1.labelList()
         for (label in labels) {
-            val ids = mutableListOf<String>()
-
             val withLabel1 = children1.filter { it.label() == label }
             val withLabel2 = children2.filter { it.label() == label }
-            withLabel1.forEach {
-                if (it.id !== null && !ids.contains(it.id!!)) ids.add(it.id!!)
-            }
 
+            val ids = withLabel1.idList()
             for (id in ids) {
                 val fromT1 = withLabel1.filter { it.id == id }
                 val fromT2 = withLabel2.filter { it.id == id }
@@ -32,6 +26,9 @@ class Preprocessor(private val relation: BinaryRelation<DeltaTreeElement>) : Mat
                     identified1.children.forEach { childFromT1 ->
                         val partner = identified2.children.find {
                             childFromT2 -> childFromT1.label() == childFromT2.label()
+                                && (childFromT1.value() == childFromT2.value() || !childFromT1.isLeaf() && !childFromT2.isLeaf())
+                                && !relation.containsPairFor(childFromT1)
+                                && !relation.containsPairFor(childFromT2)
                         }
                         if (partner !== null) relation.add(Pair(childFromT1, partner))
                     }
@@ -39,5 +36,33 @@ class Preprocessor(private val relation: BinaryRelation<DeltaTreeElement>) : Mat
                 }
             }
         }
+    }
+
+    private fun matchUniqueInternals(children1: List<DeltaTreeElement>, children2: List<DeltaTreeElement>) {
+        val uniqueInternalsNames = listOf(
+                "import_list",
+                "package_directive"
+        )
+        uniqueInternalsNames.forEach { name ->
+            val fromT1 = children1.find { it.name == name }
+            val fromT2 = children2.find { it.name == name }
+            if (fromT1 !== null && fromT2 !== null) relation.add(fromT1, fromT2)
+        }
+    }
+
+    private fun List<DeltaTreeElement>.labelList() : List<IElementType> {
+        val labels = mutableListOf<IElementType>()
+        this
+                .filter { it.id !== null }
+                .forEach { if (!labels.contains(it.label())) labels.add(it.label()) }
+        return labels
+    }
+
+    private fun List<DeltaTreeElement>.idList() : List<String> {
+        val ids = mutableListOf<String>()
+        this
+                .filter { it.id !== null && !ids.contains(it.id!!) }
+                .forEach { ids.add(it.id!!) }
+        return ids
     }
 }
