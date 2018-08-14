@@ -44,14 +44,18 @@ object Diff {
 
     private fun DeltaTreeElement.setContext(currentContextLevel: ContextLevel) {
         this.contextLevel = currentContextLevel
-
         var newContextLevel = currentContextLevel
 
-        if (this.name.contains("class")) newContextLevel = ContextLevel.CLASS_MEMBER
-        if (this.name.contains("fun"))   newContextLevel = ContextLevel.LOCAL
-        // TODO: Lot of variants here
-        if (this.name.contains("expression") || this.name.contains("assignment"))
+        if (this.name.contains("block")) {
+            val parentName = this.parent!!.name
+            newContextLevel =
+                    if (parentName.contains("class")) ContextLevel.CLASS_MEMBER
+                    else if (parentName.contains("fun") && currentContextLevel != ContextLevel.EXPRESSION)
+                        ContextLevel.LOCAL
+                    else ContextLevel.EXPRESSION
+        } else if (this.name.contains("expression") || this.name.contains("assignment")) {
             newContextLevel = ContextLevel.EXPRESSION
+        }
 
         children.forEach { it.setContext(newContextLevel) }
     }
