@@ -42,7 +42,7 @@ class DiffChunk {
     override fun toString(): String {
         return """
             CHUNK
-            Operations: ${myOperations.map { it.toShortString() }}
+            Operations: ${myOperations.map { it.toString() }}
             Text ranges: ${leftRange ?: "-"}, ${rightRange ?: "-"}
 
         """.replaceIndent("")
