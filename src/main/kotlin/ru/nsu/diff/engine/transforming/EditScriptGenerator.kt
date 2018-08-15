@@ -22,8 +22,8 @@ object EditScriptGenerator {
         return if (treesAreIdentical(inputTuple.T1, inputTuple.T2)) script else null
     }
 
-    private fun treesAreIdentical(root1: DeltaTreeElement, root2: DeltaTreeElement) =
-            root1.text.removeWhiteSpace() == root2.text.removeWhiteSpace()
+    private fun treesAreIdentical(root1: DeltaTreeElement, root2: DeltaTreeElement)
+            = root1.text.removeWhiteSpace() == root2.text.removeWhiteSpace()
 
     private fun String.removeWhiteSpace() = this.replace(Regex("[\r\n\t ]"), "")
 
@@ -91,7 +91,7 @@ object EditScriptGenerator {
         return newDelta
     }
 
-    /**
+    /*
      * this@findPosition --- node from T2
      * Find rightmost sibling to the left of it
      * Return sibling's partner index
