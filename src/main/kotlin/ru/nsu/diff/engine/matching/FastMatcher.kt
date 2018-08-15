@@ -1,26 +1,13 @@
 package ru.nsu.diff.engine.matching
 
-import ru.nsu.diff.util.ContextLevel.*
+import ru.nsu.diff.engine.lang.ContextLevel
+import ru.nsu.diff.engine.lang.LangCfg
 import ru.nsu.diff.util.*
 
-infix fun ContextLevel.to(that: ContextLevel) = Pair(this, that)
-val possibleContextLevelChanges = listOf(
-        TOP_LEVEL to TOP_LEVEL,
-        TOP_LEVEL to CLASS_MEMBER,
-        TOP_LEVEL to LOCAL,
-        CLASS_MEMBER to CLASS_MEMBER,
-        CLASS_MEMBER to TOP_LEVEL,
-        CLASS_MEMBER to LOCAL,
-        LOCAL to LOCAL,
-        LOCAL to CLASS_MEMBER,
-        LOCAL to EXPRESSION,
-        EXPRESSION to EXPRESSION,
-        EXPRESSION to LOCAL
-)
-
-class FastMatcher(private val relation: BinaryRelation<DeltaTreeElement>) : Matcher {
-    private val equalParameterT = 0.8
-
+class FastMatcher(
+        private val langCfg: LangCfg,
+        private val relation: BinaryRelation<DeltaTreeElement>
+) : Matcher {
     fun match(nodes1: List<DeltaTreeElement>, nodes2: List<DeltaTreeElement>) {
         val nodesToMatch1 = nodes1.filter { it.isLeaf() && !relation.containsPairFor(it) }.toMutableList()
         val nodesToMatch2 = nodes2.filter { it.isLeaf() && !relation.containsPairFor(it) }.toMutableList()
@@ -63,20 +50,19 @@ class FastMatcher(private val relation: BinaryRelation<DeltaTreeElement>) : Matc
 
     private fun equal(x: DeltaTreeElement, y: DeltaTreeElement) : Boolean {
         if (x.isLeaf() && y.isLeaf()) {
-            return x.label() == y.label() && x.value() == y.value() && contextsCompatible(x, y)
+            return x.label() == y.label()
+                    && x.value() == y.value()
+                    && langCfg.contextManager.contextsAreCompatible(x.contextLevel, y.contextLevel)
         }
         val max = maxOf(x.nodesNumber(), y.nodesNumber())
         val value = common(x, y) * 1.0 / (max - 1)
         return x.label() == y.label()
-                && (value > equalParameterT || x.id !== null && x.id == y.id)
-                && contextsCompatible(x, y)
+                && value > langCfg.fastMatcherEqualParameter
+                && langCfg.contextManager.contextsAreCompatible(x.contextLevel, y.contextLevel)
     }
 
     private fun common(x: DeltaTreeElement, y: DeltaTreeElement)
             = relation.pairs
             .filter { it.first.haveParent(x) && it.second.haveParent(y) }
             .count()
-
-    private fun contextsCompatible(node1: DeltaTreeElement, node2: DeltaTreeElement) =
-            possibleContextLevelChanges.contains(node1.contextLevel to node2.contextLevel)
 }

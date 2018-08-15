@@ -1,23 +1,17 @@
 package ru.nsu.diff.engine.matching
 
 import ru.nsu.diff.util.BinaryRelation
-import ru.nsu.diff.util.ContextLevel
+import ru.nsu.diff.engine.lang.LangCfg
 import ru.nsu.diff.util.DeltaTreeElement
 import ru.nsu.diff.util.LongestCommonSubsequence
 
 class Postprocessor(
+        private val langCfg: LangCfg,
         private val relation: BinaryRelation<DeltaTreeElement>,
         private val t1Height: Int
 ) : Matcher {
     fun match(node1: DeltaTreeElement) {
-        val node2 = relation.getPartner(node1)
-
-        if (node2 === null) {
-            if (node1.`is a part of the expression`()) {
-                node1.removeRelationsInSubTree()
-                return
-            } else return node1.children.forEach { match(it) }
-        }
+        val node2 = relation.getPartner(node1) ?: return
 
         for (child in node1.children) {
             val partner = relation.getPartner(child)
@@ -32,6 +26,10 @@ class Postprocessor(
                 val candidateFromUnmatched = child findBestPartnerIn node2unmatchedChildren
                 val candidateFromMatched = child findBestPartnerIn node2matchedChildren
 
+                if (candidateFromUnmatched === null && candidateFromMatched === null) {
+                    child.removeRelationsInSubTree()
+                    continue
+                }
                 if (candidateFromUnmatched !== null && candidateFromMatched === null) candidate = candidateFromUnmatched
                 if (candidateFromUnmatched === null && candidateFromMatched !== null) {
                     val realPartnerOfCandidate = relation.getPartner(candidateFromMatched)
@@ -46,7 +44,14 @@ class Postprocessor(
                             else candidateFromUnmatched
                 }
 
-            } else if (partner.parent !== node2) candidate = child findBestPartnerIn node2.children
+            } else if (partner.parent !== node2) {
+                candidate = child findBestPartnerIn node2.children
+
+                if (candidate === null && !langCfg.contextManager.nodesAreCompatible(child, partner)) {
+                    child.removeRelationsInSubTree()
+                    continue
+                }
+            }
 
             if (candidate !== null) {
                 relation.removePairWith(child)
@@ -58,18 +63,14 @@ class Postprocessor(
         }
     }
 
-    private fun DeltaTreeElement.`is a part of the expression`() =
-            this.contextLevel == ContextLevel.EXPRESSION && this.parent?.contextLevel != ContextLevel.EXPRESSION
-
     private fun DeltaTreeElement.removeRelationsInSubTree() {
         relation.removePairWith(this)
         children.forEach { it.removeRelationsInSubTree() }
     }
 
     private infix fun DeltaTreeElement.findBestPartnerIn(nodes: List<DeltaTreeElement>) : DeltaTreeElement? {
-        // TODO: Boundary percentage should depend on the height of the subtree
-        val boundaryPercentage = 0.8 * (1 - this.height() * 1.0 / t1Height)
-        val strongBoundaryPercentage = 0.9
+        // Boundary percentage should depend on the height of the subtree
+        val boundaryPercentage = langCfg.similarityBoundaryCoefficient * (1 - this.height() * 1.0 / t1Height)
 
         var percentage = .0
         var partner: DeltaTreeElement? = null
@@ -90,12 +91,12 @@ class Postprocessor(
                 }
 
         // If element is a leaf, require exact match
-        if (this.isLeaf()) {
-            return if (percentage == 1.0) partner else null
-        }
+        if (this.isLeaf()) return if (percentage == 1.0) partner else null
         // If element has id, require either a match of the ids or a very good match of the rest
         if (this.id !== null) {
-            return if (this.id == partner?.id || percentage > strongBoundaryPercentage) partner else null
+            return if (this.id == partner?.id || percentage > langCfg.strongSimilarityBoundaryPercentage)
+                partner
+            else null
         }
 
         return if (percentage > boundaryPercentage) partner else null

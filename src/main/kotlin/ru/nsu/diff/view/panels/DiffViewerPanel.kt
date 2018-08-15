@@ -2,9 +2,11 @@ package ru.nsu.diff.view.panels
 
 import com.intellij.diff.tools.util.DiffSplitter
 import com.intellij.openapi.editor.ex.EditorEx
+import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiFileFactory
 import com.intellij.psi.PsiManager
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.UIUtil
@@ -17,6 +19,8 @@ import java.awt.BorderLayout
 
 import ru.nsu.diff.engine.Diff
 import ru.nsu.diff.engine.conversion.DiffChunk
+import ru.nsu.diff.engine.lang.java.JavaCfg
+import ru.nsu.diff.engine.lang.kotlin.KotlinCfg
 import ru.nsu.diff.view.panels.upper.InfoPanel
 import ru.nsu.diff.view.util.*
 
@@ -139,8 +143,8 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
             return
         }
 
-
-        val chunks = Diff.diff(psiElement1, psiElement2)
+        val langCfg = if (fileType1?.defaultExtension == "kt") KotlinCfg() else JavaCfg()
+        val chunks = Diff(langCfg).diff(psiElement1, psiElement2)
         when {
             chunks === null -> DiffDialogNotifier.showDialog(DiffMessageType.UNABLE_TO_DIFF)
             chunks.isEmpty() -> DiffDialogNotifier.showDialog(DiffMessageType.IDENTICAL_FILES)

@@ -1,10 +1,14 @@
 package ru.nsu.diff.engine.matching
 
 import com.intellij.psi.tree.IElementType
+import ru.nsu.diff.engine.lang.LangCfg
 import ru.nsu.diff.util.BinaryRelation
 import ru.nsu.diff.util.DeltaTreeElement
 
-class Preprocessor(private val relation: BinaryRelation<DeltaTreeElement>) : Matcher {
+class Preprocessor(
+        private val langCfg: LangCfg,
+        private val relation: BinaryRelation<DeltaTreeElement>
+) : Matcher {
     fun match(children1: List<DeltaTreeElement>, children2: List<DeltaTreeElement>) {
         matchUniqueInternals(children1, children2)
 
@@ -39,11 +43,7 @@ class Preprocessor(private val relation: BinaryRelation<DeltaTreeElement>) : Mat
     }
 
     private fun matchUniqueInternals(children1: List<DeltaTreeElement>, children2: List<DeltaTreeElement>) {
-        val uniqueInternalsNames = listOf(
-                "import_list",
-                "package_directive"
-        )
-        uniqueInternalsNames.forEach { name ->
+        langCfg.uniqueInternalsNames.forEach { name ->
             val fromT1 = children1.find { it.name == name }
             val fromT2 = children2.find { it.name == name }
             if (fromT1 !== null && fromT2 !== null) relation.add(fromT1, fromT2)

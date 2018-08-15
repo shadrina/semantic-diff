@@ -3,6 +3,8 @@ package ru.nsu.diff.util
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.tree.IElementType
+import ru.nsu.diff.engine.lang.ContextLevel
+import ru.nsu.diff.engine.lang.EmptyContext
 
 class DeltaTreeElement(
         val myPsi: PsiElement,
@@ -15,7 +17,7 @@ class DeltaTreeElement(
 
     var id: String? = null
     var parent: DeltaTreeElement? = null
-    var contextLevel: ContextLevel = ContextLevel.EMPTY_CONTEXT
+    var contextLevel: ContextLevel = EmptyContext
 
     /**
      * (!) Function is called only on build stage
