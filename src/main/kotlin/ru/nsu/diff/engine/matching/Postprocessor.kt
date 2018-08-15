@@ -1,15 +1,23 @@
 package ru.nsu.diff.engine.matching
 
-import com.intellij.util.text.EditDistance
 import ru.nsu.diff.util.BinaryRelation
 import ru.nsu.diff.util.ContextLevel
 import ru.nsu.diff.util.DeltaTreeElement
 import ru.nsu.diff.util.LongestCommonSubsequence
 
-class Postprocessor(private val relation: BinaryRelation<DeltaTreeElement>, private val t1Height: Int) : Matcher {
+class Postprocessor(
+        private val relation: BinaryRelation<DeltaTreeElement>,
+        private val t1Height: Int
+) : Matcher {
     fun match(node1: DeltaTreeElement) {
         val node2 = relation.getPartner(node1)
-                ?: return node1.children.forEach { match(it) }
+
+        if (node2 === null) {
+            if (node1.`is a part of the expression`()) {
+                node1.removeRelationsInSubTree()
+                return
+            } else return node1.children.forEach { match(it) }
+        }
 
         for (child in node1.children) {
             val partner = relation.getPartner(child)
@@ -24,42 +32,43 @@ class Postprocessor(private val relation: BinaryRelation<DeltaTreeElement>, priv
                 val candidateFromUnmatched = child findBestPartnerIn node2unmatchedChildren
                 val candidateFromMatched = child findBestPartnerIn node2matchedChildren
 
+                if (candidateFromUnmatched !== null && candidateFromMatched === null) candidate = candidateFromUnmatched
                 if (candidateFromUnmatched === null && candidateFromMatched !== null) {
                     val realPartnerOfCandidate = relation.getPartner(candidateFromMatched)
-                    if (candidateFromMatched.betterPartnerFrom(child, realPartnerOfCandidate) === child
-                            && relation.getPartner(candidateFromMatched.parent!!) === node1)
+                    if (realPartnerOfCandidate!!.parent !== node1) {
                         candidate = candidateFromMatched
-
-                } else if (candidateFromUnmatched !== null && candidateFromMatched === null) {
-                    candidate = candidateFromUnmatched
-
-                } else if (candidateFromMatched !== null && candidateFromUnmatched !== null) {
-                    val better = child.betterPartnerFrom(candidateFromUnmatched, candidateFromMatched)
-                    if (better === candidateFromUnmatched) candidate = candidateFromUnmatched
-                    else if (better === candidateFromMatched) {
-                        val realPartnerOfCandidate = relation.getPartner(candidateFromMatched)
-                        candidate = if (candidateFromMatched.betterPartnerFrom(child, realPartnerOfCandidate) === child)
-                            candidateFromMatched
-                        else candidateFromUnmatched
                     }
                 }
+                if (candidateFromUnmatched !== null && candidateFromMatched !== null) {
+                    val realPartnerOfMatchedCandidate = relation.getPartner(candidateFromMatched)
+                    candidate =
+                            if (realPartnerOfMatchedCandidate!!.parent !== node1) candidateFromMatched
+                            else candidateFromUnmatched
+                }
 
-            } else if (partner.parent !== node2) {
-                candidate = child findBestPartnerIn node2.children
+            } else if (partner.parent !== node2) candidate = child findBestPartnerIn node2.children
 
-            }
             if (candidate !== null) {
                 relation.removePairWith(child)
                 relation.removePairWith(candidate)
                 relation.add(child, candidate)
             }
+
             match(child)
         }
     }
 
+    private fun DeltaTreeElement.`is a part of the expression`() =
+            this.contextLevel == ContextLevel.EXPRESSION && this.parent?.contextLevel != ContextLevel.EXPRESSION
+
+    private fun DeltaTreeElement.removeRelationsInSubTree() {
+        relation.removePairWith(this)
+        children.forEach { it.removeRelationsInSubTree() }
+    }
+
     private infix fun DeltaTreeElement.findBestPartnerIn(nodes: List<DeltaTreeElement>) : DeltaTreeElement? {
         // TODO: Boundary percentage should depend on the height of the subtree
-        val boundaryPercentage = 1.0 * (1 - this.height() * 1.0 / t1Height)
+        val boundaryPercentage = 0.8 * (1 - this.height() * 1.0 / t1Height)
         val strongBoundaryPercentage = 0.9
 
         var percentage = .0
@@ -90,15 +99,5 @@ class Postprocessor(private val relation: BinaryRelation<DeltaTreeElement>, priv
         }
 
         return if (percentage > boundaryPercentage) partner else null
-    }
-
-    private fun DeltaTreeElement.betterPartnerFrom(node1: DeltaTreeElement?, node2: DeltaTreeElement?)
-            : DeltaTreeElement? {
-        if (node1 === null || node2 === null) return null
-
-        val distance1 = EditDistance.levenshtein(text, node1.text, true)
-        val distance2 = EditDistance.levenshtein(text, node2.text, true)
-
-        return if (distance1 <= distance2) node1 else node2
     }
 }
