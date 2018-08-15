@@ -24,7 +24,7 @@ Proceeding bottom-up match nodes by searching for the longest common subsequence
 ### Postprocessing
 Proceeding top-down check:
 - If node is unmatched, search for the partner in parent's partner children.
-- If parents of matched nodes are matched with each other, try to find better partners for the nodes.
+- If parents of matched nodes are <b>not</b> matched with each other, try to find better partners for the nodes.
 
 ## References
 - Sudarshan S. Chawathe, Anand Rajaraman, Hector Garcia-Molina, Jennifer Widom. *Change Detection in Hierarchically Structured Information*, 1995
