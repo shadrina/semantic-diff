@@ -29,21 +29,25 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
         set(value) {
             field = value
             updateEditor(DiffSide.LEFT)
+            clearHighlighting(DiffSide.RIGHT)
         }
     var file2: VirtualFile? = null
         set(value) {
             field = value
             updateEditor(DiffSide.RIGHT)
+            clearHighlighting(DiffSide.LEFT)
         }
     var psi1: PsiFile? = null
         set(value) {
             field = value
             updateEditor(DiffSide.LEFT)
+            clearHighlighting(DiffSide.RIGHT)
         }
     var psi2: PsiFile? = null
         set(value) {
             field = value
             updateEditor(DiffSide.RIGHT)
+            clearHighlighting(DiffSide.LEFT)
         }
 
     private lateinit var leftEditor: EditorEx
@@ -99,6 +103,16 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
             }
         }
         painter.chunks = listOf()
+    }
+
+    private fun clearHighlighting(side: DiffSide) {
+        when (side) {
+            DiffSide.LEFT -> leftEditor.markupModel.removeAllHighlighters()
+            DiffSide.RIGHT -> rightEditor.markupModel.removeAllHighlighters()
+        }
+        painter.chunks = listOf()
+        leftLayerUI.chunks = listOf()
+        rightLayerUI.chunks = listOf()
     }
 
     fun showResult() {
