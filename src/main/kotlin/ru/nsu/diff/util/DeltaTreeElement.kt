@@ -44,6 +44,15 @@ class DeltaTreeElement(
         children.removeAt(i)
     }
 
+    fun haveParent(node: DeltaTreeElement) : Boolean {
+        var currParent = parent
+        while (currParent != null) {
+            if (currParent === node) return true
+            currParent = currParent.parent
+        }
+        return false
+    }
+
     fun indexOf(child: DeltaTreeElement) = children.indexOf(child)
 
     fun nodesNumber() : Int = 1 + children.sumBy { it.nodesNumber() }

@@ -19,7 +19,7 @@ val possibleContextLevelChanges = listOf(
 )
 
 class FastMatcher(private val relation: BinaryRelation<DeltaTreeElement>) : Matcher {
-    private val equalParameterT = 0.999
+    private val equalParameterT = 0.8
 
     fun match(nodes1: List<DeltaTreeElement>, nodes2: List<DeltaTreeElement>) {
         val nodesToMatch1 = nodes1.filter { it.isLeaf() && !relation.containsPairFor(it) }.toMutableList()
@@ -74,17 +74,8 @@ class FastMatcher(private val relation: BinaryRelation<DeltaTreeElement>) : Matc
 
     private fun common(x: DeltaTreeElement, y: DeltaTreeElement)
             = relation.pairs
-            .filter { it.first haveParent x && it.second haveParent y }
+            .filter { it.first.haveParent(x) && it.second.haveParent(y) }
             .count()
-
-    private infix fun DeltaTreeElement.haveParent(p: DeltaTreeElement) : Boolean {
-        var currParent = parent
-        while (currParent != null) {
-            if (currParent === p) return true
-            currParent = currParent.parent
-        }
-        return false
-    }
 
     private fun contextsCompatible(node1: DeltaTreeElement, node2: DeltaTreeElement) =
             possibleContextLevelChanges.contains(node1.contextLevel to node2.contextLevel)
