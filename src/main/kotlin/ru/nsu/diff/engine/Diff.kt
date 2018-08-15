@@ -29,7 +29,8 @@ object Diff {
         val root = DeltaTreeElement(
                 node.psi,
                 node.elementType,
-                node.text)
+                node.text
+        )
 
         var nextChild = node.firstChildNode
         while (nextChild !== null) {
@@ -49,10 +50,11 @@ object Diff {
         if (this.name.contains("block")) {
             val parentName = this.parent!!.name
             newContextLevel =
-                    if (parentName.contains("class")) ContextLevel.CLASS_MEMBER
-                    else if (parentName.contains("fun") && currentContextLevel != ContextLevel.EXPRESSION)
+                    if (parentName.contains("class") || parentName.contains("object")) {
+                        ContextLevel.CLASS_MEMBER
+                    } else if (parentName.contains("fun") && currentContextLevel != ContextLevel.EXPRESSION) {
                         ContextLevel.LOCAL
-                    else ContextLevel.EXPRESSION
+                    } else ContextLevel.EXPRESSION
         } else if (this.name.contains("expression") || this.name.contains("assignment")) {
             newContextLevel = ContextLevel.EXPRESSION
         }
