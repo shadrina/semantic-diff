@@ -37,21 +37,28 @@ object EditScriptGenerator {
 
             // Insert-phase
             if (partner === null && currParent !== null) {
-                val newNode = curr.nodeCopy()
-                val dstNode = inputTuple.relation.getPartner(currParent)
-                val ranges = Pair(null, curr.textRange)
-                val insertOperation = EditOperation(INSERT, newNode, dstNode, curr.findPosition(), ranges)
+                partner = curr.nodeCopy()
+                inputTuple.relation.add(partner, curr)
+                val insertOperation = EditOperation(
+                        INSERT,
+                        partner,
+                        inputTuple.relation.getPartner(currParent),
+                        curr.findPosition { inputTuple.relation.containsPairFor(it) },
+                        Pair(null, curr.textRange)
+                )
                 script.addAndPerform(insertOperation)
-                partner = newNode
-                inputTuple.relation.add(newNode, curr)
 
             // Move-phase
             } else if (partner !== null && currParent !== null) {
                 val partnerParent = partner.parent
                 if (partnerParent != null && !inputTuple.relation.contains(Pair(partnerParent, currParent))) {
-                    val ranges = Pair(partner.textRange, curr.textRange)
-                    val dstNode = inputTuple.relation.getPartner(currParent)
-                    val moveOperation = EditOperation(MOVE, partner, dstNode, curr.findPosition(), ranges)
+                    val moveOperation = EditOperation(
+                            MOVE,
+                            partner,
+                            inputTuple.relation.getPartner(currParent),
+                            curr.findPosition { inputTuple.relation.containsPairFor(it) },
+                            Pair(partner.textRange, curr.textRange)
+                    )
                     script.addAndPerform(moveOperation)
                 }
             }
@@ -89,7 +96,7 @@ object EditScriptGenerator {
      * Find rightmost sibling to the left of it
      * Return sibling's partner index
      */
-    private fun DeltaTreeElement.findPosition() : Int {
+    private fun DeltaTreeElement.findPosition(inOrder: (DeltaTreeElement) -> Boolean) : Int {
         val t2Parent = this.parent
         if (t2Parent === null) return 0
 
@@ -98,7 +105,7 @@ object EditScriptGenerator {
 
         var siblingToTheLeftIdx = realT2idx - 1
         var siblingToTheLeft = t2Parent.children[siblingToTheLeftIdx]
-        while (siblingToTheLeftIdx >= 0 && !inputTuple.relation.containsPairFor(siblingToTheLeft)) {
+        while (siblingToTheLeftIdx >= 0 && !inOrder(siblingToTheLeft)) {
             siblingToTheLeft = t2Parent.children[siblingToTheLeftIdx--]
         }
         // The node in T1 before which this@findPosition should be
@@ -122,12 +129,17 @@ object EditScriptGenerator {
         val unmatched = inputTuple.relation.pairs
                 .filter { S1.contains(it.first) && S2.contains(it.second) }
                 .filter { !S.contains(it) }
-        unmatched.forEach {
-            val k = it.second.findPosition()
-            val dstNode = inputTuple.relation.getPartner(it.second.parent!!)
-            val ranges = Pair(it.first.textRange, it.second.textRange)
-            val moveOperation = EditOperation(MOVE, it.first, dstNode, k, ranges)
+        val inOrderElements = S.toMutableList()
+        unmatched.forEach { pair ->
+            val moveOperation = EditOperation(
+                    MOVE,
+                    pair.first,
+                    inputTuple.relation.getPartner(pair.second.parent!!),
+                    pair.second.findPosition { elem -> inOrderElements.any { it.second === elem } },
+                    Pair(pair.first.textRange, pair.second.textRange)
+            )
             script.addAndPerform(moveOperation)
+            inOrderElements.add(pair)
         }
     }
 }
