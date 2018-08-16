@@ -3,13 +3,13 @@ package ru.nsu.diff.engine
 import com.intellij.lang.ASTNode
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiWhiteSpace
+
 import ru.nsu.diff.engine.conversion.Converter
 import ru.nsu.diff.engine.conversion.DiffChunk
-import ru.nsu.diff.engine.lang.ContextLevel
-import ru.nsu.diff.engine.lang.LangCfg
-
 import ru.nsu.diff.engine.matching.MatchingManager
 import ru.nsu.diff.engine.transforming.EditScriptGenerator
+import ru.nsu.diff.lang.ContextLevel
+import ru.nsu.diff.lang.LangCfg
 import ru.nsu.diff.util.*
 
 class Diff(private val langCfg: LangCfg) {
@@ -23,7 +23,7 @@ class Diff(private val langCfg: LangCfg) {
 
         MatchingManager(langCfg, relation).match(deltaTree, goldTree)
 
-        val script =  EditScriptGenerator.generateScript(InputTuple(deltaTree, goldTree, relation))
+        val script = EditScriptGenerator.generateScript(InputTuple(deltaTree, goldTree, relation))
         return if (script !== null) Converter.convert(script) else null
     }
 
@@ -43,6 +43,11 @@ class Diff(private val langCfg: LangCfg) {
 
         root.identify()
         return root
+    }
+
+    private fun DeltaTreeElement.identify() {
+        val identifierNode = children.find { it.name == "identifier" }
+        if (identifierNode !== null) id = identifierNode.text
     }
 
     private fun DeltaTreeElement.setContext(currentContextLevel: ContextLevel) {

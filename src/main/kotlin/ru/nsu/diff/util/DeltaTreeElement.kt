@@ -3,8 +3,8 @@ package ru.nsu.diff.util
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.tree.IElementType
-import ru.nsu.diff.engine.lang.ContextLevel
-import ru.nsu.diff.engine.lang.EmptyContext
+import ru.nsu.diff.lang.ContextLevel
+import ru.nsu.diff.lang.EmptyContext
 
 class DeltaTreeElement(
         val myPsi: PsiElement,
@@ -18,18 +18,6 @@ class DeltaTreeElement(
     var id: String? = null
     var parent: DeltaTreeElement? = null
     var contextLevel: ContextLevel = EmptyContext
-
-    /**
-     * (!) Function is called only on build stage
-     */
-    fun identify() {
-        children.forEach {
-            if (it.name == "identifier") {
-                id = it.text
-                return
-            }
-        }
-    }
 
     fun addChild(child: DeltaTreeElement, i: Int = -1) {
         if (i >= 0 && i in 0..children.size) children.add(i, child)
@@ -60,8 +48,6 @@ class DeltaTreeElement(
     fun nodesNumber() : Int = 1 + children.sumBy { it.nodesNumber() }
 
     fun height() : Int = 1 + (children.map { it.height() }.max() ?: 0)
-
-    fun depth() : Int = 1 + (parent?.depth() ?: 0)
 
     fun nodes() : MutableList<DeltaTreeElement> {
         val list = mutableListOf(this)
