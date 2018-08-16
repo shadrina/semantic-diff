@@ -14,8 +14,8 @@ import java.awt.geom.CubicCurve2D
 import ru.nsu.diff.engine.conversion.DiffChunk
 
 class DividerPainter(val mySplitter: DiffSplitter) : DiffSplitter.Painter {
-    var leftEditor: EditorEx? = null
-    var rightEditor: EditorEx? = null
+    lateinit var leftEditor: EditorEx
+    lateinit var rightEditor: EditorEx
 
     var chunks = listOf<DiffChunk>()
 
@@ -37,21 +37,39 @@ class DividerPainter(val mySplitter: DiffSplitter) : DiffSplitter.Painter {
     }
 
     override fun paint(g: Graphics, component: JComponent) {
-        if (leftEditor == null || rightEditor == null) return
-        val lineHeight = leftEditor!!.lineHeight
+        if (!this::leftEditor.isInitialized || !this::rightEditor.isInitialized) return
+
+        data class PathInfo(val upperCurve: Shape, val lowerCurve: Shape) {
+            override fun equals(other: Any?): Boolean {
+                if (other === this) return true
+                if (other !is PathInfo) return false
+
+                return other.upperCurve.bounds == this.upperCurve.bounds
+                        && other.lowerCurve.bounds == this.lowerCurve.bounds
+            }
+
+            override fun hashCode(): Int {
+                var result = upperCurve.hashCode()
+                result = 31 * result + lowerCurve.hashCode()
+                return result
+            }
+        }
+
+        val paintedPaths = mutableListOf<PathInfo>()
+        val lineHeight = leftEditor.lineHeight
         val width = component.width
 
         g as Graphics2D
 
         for (chunk in chunks) {
             if (chunk.leftRange == null || chunk.rightRange == null) continue
-            val leftUpper = (leftEditor!!.document.getLineNumber(chunk.leftRange!!.startOffset) * lineHeight)
+            val leftUpper = (leftEditor.document.getLineNumber(chunk.leftRange!!.startOffset) * lineHeight)
                     .toDouble()
-            val leftBottom = ((leftEditor!!.document.getLineNumber(chunk.leftRange!!.endOffset) + 1) * lineHeight)
+            val leftBottom = ((leftEditor.document.getLineNumber(chunk.leftRange!!.endOffset) + 1) * lineHeight)
                     .toDouble()
-            val rightUpper = (rightEditor!!.document.getLineNumber(chunk.rightRange!!.startOffset) * lineHeight)
+            val rightUpper = (rightEditor.document.getLineNumber(chunk.rightRange!!.startOffset) * lineHeight)
                     .toDouble()
-            val rightBottom = ((rightEditor!!.document.getLineNumber(chunk.rightRange!!.endOffset) + 1) * lineHeight)
+            val rightBottom = ((rightEditor.document.getLineNumber(chunk.rightRange!!.endOffset) + 1) * lineHeight)
                     .toDouble()
 
             val upperCurve = makeCurve(width.toDouble(), leftUpper - currLeftY, rightUpper - currRightY, true)
@@ -61,8 +79,13 @@ class DividerPainter(val mySplitter: DiffSplitter) : DiffSplitter.Painter {
             path.append(upperCurve, true)
             path.append(lowerCurve, true)
 
-            g.color = ColorFactory.dividerOperationColor(chunk.type)
-            g.fill(path)
+            val pathInfo = PathInfo(upperCurve, lowerCurve)
+
+            if (!paintedPaths.contains(pathInfo)) {
+                g.color = ColorFactory.dividerOperationColor(chunk.type)
+                g.fill(path)
+                paintedPaths.add(pathInfo)
+            }
         }
         g.dispose()
     }

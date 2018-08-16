@@ -11,19 +11,16 @@ object Converter {
         val operationsWithSelectedMark = editScript.editOperations
                 .map { OperationWithSelectedMark(it, false) }
 
-        operationsWithSelectedMark.forEach { next ->
-            if (next.selected) return@forEach
+        for (operationWithSelectedMark in operationsWithSelectedMark) {
+            if (operationWithSelectedMark.selected) continue
 
             val chunk = DiffChunk()
-            chunk.add(next.operation)
-            next.selected = true
+            operationWithSelectedMark.selected = chunk.tryToMerge(operationWithSelectedMark.operation)
 
-            operationsWithSelectedMark.forEach {
-                if (!it.selected && chunk.ableToMerge(it.operation)) {
-                    chunk.add(it.operation)
-                    it.selected = true
-                }
-            }
+            operationsWithSelectedMark
+                    .filter { !it.selected }
+                    .forEach { it.selected = chunk.tryToMerge(it.operation) }
+
             chunk.initType()
             chunks.add(chunk)
         }

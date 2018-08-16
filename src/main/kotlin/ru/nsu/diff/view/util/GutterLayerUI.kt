@@ -38,12 +38,13 @@ class GutterLayerUI(
 
     override fun paint(g: Graphics?, c: JComponent) {
         super.paint(g, c)
-        if (g == null) return
+        if (g === null) return
 
         var textRange: TextRange?
         val lineHeight = editor.lineHeight
         val gutterWidth = editor.gutterComponentEx.width
         var gutterColor: JBColor
+        val paintedLines = mutableListOf<Int>()
 
         val xOffset = when (side) {
             DiffSide.LEFT -> editor.component.width - gutterWidth
@@ -58,9 +59,10 @@ class GutterLayerUI(
             val start = editor.document.getLineNumber(textRange.startOffset)
             val stop = editor.document.getLineNumber(textRange.endOffset)
 
-            for (i in start..stop) {
-                g.color = gutterColor
-                g.fillRect(xOffset, i * lineHeight - currY, gutterWidth, lineHeight)
+            g.color = gutterColor
+            (start..stop).filter { !paintedLines.contains(it) }.forEach {
+                g.fillRect(xOffset, it * lineHeight - currY, gutterWidth, lineHeight)
+                paintedLines.add(it)
             }
         }
     }

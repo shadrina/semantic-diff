@@ -10,11 +10,11 @@ enum class EditOperationType {
     DELETE
 }
 
-class EditOperation (
+data class EditOperation (
         val type: EditOperationType,
-        private val srcNode: DeltaTreeElement,
-        private val dstNode: DeltaTreeElement?,
-        private val placementIndex: Int?,
+        val srcNode: DeltaTreeElement,
+        val dstNode: DeltaTreeElement?,
+        val placementIndex: Int,
         val textRanges: Pair<TextRange?, TextRange?>
 ) {
     override fun toString() : String =
@@ -40,8 +40,8 @@ class EditOperation (
     fun isValid() : Boolean =
         when (type) {
             EditOperationType.UPDATE -> true
-            EditOperationType.MOVE   -> dstNode != null && placementIndex != null
-            EditOperationType.INSERT -> dstNode != null && placementIndex != null
+            EditOperationType.MOVE   -> dstNode !== null
+            EditOperationType.INSERT -> dstNode !== null
             EditOperationType.DELETE -> true
         }
 
@@ -51,11 +51,11 @@ class EditOperation (
             EditOperationType.UPDATE -> {}
             EditOperationType.MOVE -> {
                 srcNode.parent?.removeChild(srcNode)
-                dstNode!!.addChild(srcNode, placementIndex!!)
+                dstNode!!.addChild(srcNode, placementIndex)
                 dstNode.refactorText()
             }
             EditOperationType.INSERT -> {
-                dstNode!!.addChild(srcNode, placementIndex!!)
+                dstNode!!.addChild(srcNode, placementIndex)
                 dstNode.refactorText()
             }
             EditOperationType.DELETE -> {

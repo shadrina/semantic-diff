@@ -106,8 +106,9 @@ object DiffEditorUtil {
                     textAttributes,
                     HighlighterTargetArea.LINES_IN_RANGE
             )
-            if (!DocumentUtil.isAtLineStart(start, editor.document)
-                    && !DocumentUtil.isAtLineEnd(stop, editor.document)) {
+            if (editor.document.getLineNumber(start) == editor.document.getLineNumber(stop) &&
+                    (!DocumentUtil.isAtLineStart(start, editor.document)
+                            || !DocumentUtil.isAtLineEnd(stop, editor.document))) {
                 val ta = TextAttributes(null, color.littleDarker(), null, null, 0)
                 editor.markupModel.addRangeHighlighter(
                         start,
