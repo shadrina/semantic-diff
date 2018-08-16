@@ -1,5 +1,5 @@
-# semantic-diff
-IDEA plugin for representing changes to hierarchically structured data
+<h1 align="center">semantic-diff</h1>
+<p align="center">IDEA plugin for representing changes to hierarchically structured data</p>
 
 ## Algorithm
 We consider the tree as a <b>syntax tree</b> if each node has a label and a value. In our case, the label is the node type, and the value is the code fragment described by the subtree rooted by the node.
