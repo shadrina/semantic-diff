@@ -1,7 +1,6 @@
 package ru.nsu.diff.engine.matching
 
-import ru.nsu.diff.engine.lang.ContextLevel
-import ru.nsu.diff.engine.lang.LangCfg
+import ru.nsu.diff.lang.LangCfg
 import ru.nsu.diff.util.*
 
 class FastMatcher(

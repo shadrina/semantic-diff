@@ -1,7 +1,7 @@
 package ru.nsu.diff.engine.matching
 
 import ru.nsu.diff.util.BinaryRelation
-import ru.nsu.diff.engine.lang.LangCfg
+import ru.nsu.diff.lang.LangCfg
 import ru.nsu.diff.util.DeltaTreeElement
 import ru.nsu.diff.util.LongestCommonSubsequence
 

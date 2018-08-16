@@ -1,7 +1,7 @@
 package ru.nsu.diff.engine.matching
 
 import com.intellij.psi.tree.IElementType
-import ru.nsu.diff.engine.lang.LangCfg
+import ru.nsu.diff.lang.LangCfg
 import ru.nsu.diff.util.BinaryRelation
 import ru.nsu.diff.util.DeltaTreeElement
 
@@ -28,10 +28,13 @@ class Preprocessor(
 
                     // Match all their direct children
                     identified1.children.forEach { childFromT1 ->
-                        val partner = identified2.children.find {
-                            childFromT2 -> childFromT1.label() == childFromT2.label()
+                        val partner = identified2.children.find { childFromT2 ->
+                            childFromT1.label() == childFromT2.label()
+
+                                // TODO: wrong, e.g. value arguments can be different, but we should match them here
                                 && (childFromT1.value() == childFromT2.value() || !childFromT1.isLeaf() && !childFromT2.isLeaf())
-                                && !relation.containsPairFor(childFromT1)
+
+                                    && !relation.containsPairFor(childFromT1)
                                 && !relation.containsPairFor(childFromT2)
                         }
                         if (partner !== null) relation.add(Pair(childFromT1, partner))

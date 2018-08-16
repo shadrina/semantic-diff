@@ -9,10 +9,10 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiFileFactory
 import com.intellij.ui.components.JBLabel
 import org.eclipse.jgit.lib.Repository
-import ru.nsu.diff.git.DiffTestDataProvider
-import ru.nsu.diff.git.DiffTestDataProvider.buildGitRepositoryFromVirtualFile
-import ru.nsu.diff.git.FileVersions
-import ru.nsu.diff.git.Version
+import ru.nsu.diff.vcs.git.DiffTestDataProvider
+import ru.nsu.diff.vcs.git.DiffTestDataProvider.buildGitRepositoryFromVirtualFile
+import ru.nsu.diff.vcs.git.FileVersions
+import ru.nsu.diff.vcs.git.Version
 
 import java.awt.Dimension
 import javax.swing.JPanel
@@ -68,7 +68,7 @@ class BrowseGitRepoPanel(
                         FileChooserDescriptorFactory.createSingleFileNoJarsDescriptor()
                 ) { chosen ->
                     if (chosen.extension != "kt" && chosen.extension != "java") {
-                        DiffDialogNotifier.showDialog(DiffMessageType.INVALID_TYPE)
+                        DiffDialogNotifier.showDialog(DiffMessageType.UNSUPPORTED_TYPE)
                     }
                     if (gitRepository != null) {
                         chosenFile = chosen
