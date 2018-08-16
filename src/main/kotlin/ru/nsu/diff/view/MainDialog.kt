@@ -17,6 +17,8 @@ class MainDialog(project: Project) : DialogWrapper(project, true, IdeModalityTyp
     init {
         init()
         title = "Semantic diff"
+        // TODO: make resizable with editor size change
+        setResizable(false)
         setOKButtonText("Diff")
         setCancelButtonText("Close")
     }
