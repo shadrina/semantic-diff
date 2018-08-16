@@ -17,7 +17,9 @@ object EditScriptGenerator {
         val queue = Queue<DeltaTreeElement>()
         queue.enqueue(inputTuple.T2)
         bfs(queue, mutableListOf())
-        inputTuple.T1.deleteRedundant()
+
+        // Delete-phase
+        inputTuple.T1.deleteUnmatchedChildren()
 
         return if (treesAreIdentical(inputTuple.T1, inputTuple.T2)) script else null
     }
@@ -69,18 +71,16 @@ object EditScriptGenerator {
         }
     }
 
-    private fun DeltaTreeElement.deleteRedundant() {
-        val deleteOps = mutableListOf<EditOperation>()
+    private fun DeltaTreeElement.deleteUnmatchedChildren() {
+        val deleteOperations = mutableListOf<EditOperation>()
         this.children.forEach {
             if (!inputTuple.relation.containsPairFor(it)) {
                 val ranges = Pair(it.textRange, null)
-                val deleteOperation = EditOperation(DELETE, it, null, null, ranges)
-                deleteOps.add(deleteOperation)
-            } else it.deleteRedundant()
+                val deleteOperation = EditOperation(DELETE, it, null, it.parent?.indexOf(it) ?: -1, ranges)
+                deleteOperations.add(deleteOperation)
+            } else it.deleteUnmatchedChildren()
         }
-        deleteOps.forEach {
-            script.addAndPerform(it)
-        }
+        deleteOperations.forEach(script::addAndPerform)
     }
 
     private fun DeltaTreeElement.nodeCopy() : DeltaTreeElement {
@@ -91,7 +91,7 @@ object EditScriptGenerator {
         return newDelta
     }
 
-    /*
+    /**
      * this@findPosition --- node from T2
      * Find rightmost sibling to the left of it
      * Return sibling's partner index

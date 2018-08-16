@@ -2,11 +2,9 @@ package ru.nsu.diff.view.panels
 
 import com.intellij.diff.tools.util.DiffSplitter
 import com.intellij.openapi.editor.ex.EditorEx
-import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
-import com.intellij.psi.PsiFileFactory
 import com.intellij.psi.PsiManager
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.UIUtil
@@ -19,8 +17,7 @@ import java.awt.BorderLayout
 
 import ru.nsu.diff.engine.Diff
 import ru.nsu.diff.engine.conversion.DiffChunk
-import ru.nsu.diff.engine.lang.java.JavaCfg
-import ru.nsu.diff.engine.lang.kotlin.KotlinCfg
+import ru.nsu.diff.lang.util.LangCfgFactory
 import ru.nsu.diff.view.panels.upper.InfoPanel
 import ru.nsu.diff.view.util.*
 
@@ -77,48 +74,6 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
         add(splitter, BorderLayout.CENTER)
     }
 
-    private fun updateEditor(side: DiffSide) {
-        when (side) {
-            DiffSide.LEFT -> {
-                leftEditor =
-                        if (file1 != null) DiffEditorUtil.createEditorPanelFromVirtualFile(project, file1, side)
-                        else DiffEditorUtil.createEditorPanelFromPsiFile(project, psi1, side)
-                UIUtil.removeScrollBorder(leftEditor.component)
-
-                val labeled = DiffEditorUtil.createDiffSidePanel(leftEditor)
-                leftLayerUI = GutterLayerUI(painter, labeled, leftEditor, side)
-                val jLayer = JLayer<JComponent>(labeled, leftLayerUI)
-
-                splitter.firstComponent = jLayer
-                painter.leftEditor = leftEditor
-            }
-            DiffSide.RIGHT -> {
-                rightEditor =
-                        if (file2 != null) DiffEditorUtil.createEditorPanelFromVirtualFile(project, file2, side)
-                        else DiffEditorUtil.createEditorPanelFromPsiFile(project, psi2, side)
-                UIUtil.removeScrollBorder(rightEditor.component)
-
-                val labeled = DiffEditorUtil.createDiffSidePanel(rightEditor)
-                rightLayerUI = GutterLayerUI(painter, labeled, rightEditor, side)
-                val jLayer = JLayer<JComponent>(labeled, rightLayerUI)
-
-                splitter.secondComponent = jLayer
-                painter.rightEditor = rightEditor
-            }
-        }
-        painter.chunks = listOf()
-    }
-
-    private fun clearHighlighting(side: DiffSide) {
-        when (side) {
-            DiffSide.LEFT -> leftEditor.markupModel.removeAllHighlighters()
-            DiffSide.RIGHT -> rightEditor.markupModel.removeAllHighlighters()
-        }
-        painter.chunks = listOf()
-        leftLayerUI.chunks = listOf()
-        rightLayerUI.chunks = listOf()
-    }
-
     fun showResult() {
         val fileRepresentation1 = file1 ?: psi1
         val fileType1 = file1?.fileType ?: psi1?.fileType
@@ -143,18 +98,66 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
             return
         }
 
-        val langCfg = if (fileType1?.defaultExtension == "kt") KotlinCfg() else JavaCfg()
+        val langCfg = LangCfgFactory.createLangCfg(file1?.extension ?: psi1?.fileType?.defaultExtension ?: "")
+        if (langCfg === null) {
+            DiffDialogNotifier.showDialog(DiffMessageType.UNSUPPORTED_TYPE)
+            return
+        }
+
         val chunks = Diff(langCfg).diff(psiElement1, psiElement2)
         when {
-            chunks === null -> DiffDialogNotifier.showDialog(DiffMessageType.UNABLE_TO_DIFF)
+            chunks === null -> {
+                DiffDialogNotifier.showDialog(DiffMessageType.UNABLE_TO_DIFF)
+                return
+            }
             chunks.isEmpty() -> DiffDialogNotifier.showDialog(DiffMessageType.IDENTICAL_FILES)
             else -> chunks.render()
         }
     }
 
-    private fun List<DiffChunk>.render() {
-        this.forEach(::println)
+    private fun updateEditor(side: DiffSide) {
+        when (side) {
+            DiffSide.LEFT -> {
+                leftEditor =
+                        if (file1 !== null) DiffEditorUtil.createEditorPanelFromVirtualFile(project, file1, side)
+                        else DiffEditorUtil.createEditorPanelFromPsiFile(project, psi1, side)
+                UIUtil.removeScrollBorder(leftEditor.component)
 
+                val labeled = DiffEditorUtil.createDiffSidePanel(leftEditor)
+                leftLayerUI = GutterLayerUI(painter, labeled, leftEditor, side)
+                val jLayer = JLayer<JComponent>(labeled, leftLayerUI)
+
+                splitter.firstComponent = jLayer
+                painter.leftEditor = leftEditor
+            }
+            DiffSide.RIGHT -> {
+                rightEditor =
+                        if (file2 !== null) DiffEditorUtil.createEditorPanelFromVirtualFile(project, file2, side)
+                        else DiffEditorUtil.createEditorPanelFromPsiFile(project, psi2, side)
+                UIUtil.removeScrollBorder(rightEditor.component)
+
+                val labeled = DiffEditorUtil.createDiffSidePanel(rightEditor)
+                rightLayerUI = GutterLayerUI(painter, labeled, rightEditor, side)
+                val jLayer = JLayer<JComponent>(labeled, rightLayerUI)
+
+                splitter.secondComponent = jLayer
+                painter.rightEditor = rightEditor
+            }
+        }
+        painter.chunks = listOf()
+    }
+
+    private fun clearHighlighting(side: DiffSide) {
+        when (side) {
+            DiffSide.LEFT -> leftEditor.markupModel.removeAllHighlighters()
+            DiffSide.RIGHT -> rightEditor.markupModel.removeAllHighlighters()
+        }
+        painter.chunks = listOf()
+        leftLayerUI.chunks = listOf()
+        rightLayerUI.chunks = listOf()
+    }
+
+    private fun List<DiffChunk>.render() {
         infoPanel.differenceCount = this.size
 
         DiffEditorUtil.paintEditor(leftEditor, this, DiffSide.LEFT)

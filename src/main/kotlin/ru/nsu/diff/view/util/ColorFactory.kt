@@ -33,17 +33,13 @@ object ColorFactory {
         }
     }
 
-    private fun opacityValue(opacity: Int): Float {
-        //Returns more or less the correct, capped value
-        //Just ignore it, it works, leave it :D
-        return capFloat(3.9216f * opacity / 1000f, 0.0f, 1.0f)
-    }
+    private fun opacityValue(opacity: Int) : Float
+            = capFloat(3.9216f * opacity / 1000f, 0.0f, 1.0f)
 
-    private fun capFloat(value: Float, min: Float, max: Float): Float {
-        var v = value
-        if (value < min) v = min
-        else if (value > max) v = max
-
-        return v
-    }
+    private fun capFloat(value: Float, min: Float, max: Float) : Float
+            = when {
+                value < min -> min
+                value > max -> max
+                else -> value
+            }
 }

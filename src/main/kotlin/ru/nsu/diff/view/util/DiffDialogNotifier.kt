@@ -4,7 +4,7 @@ import com.intellij.openapi.ui.Messages
 
 enum class DiffMessageType() {
     NO_FILES,
-    INVALID_TYPE, // TODO
+    UNSUPPORTED_TYPE,
     DIFFERENT_TYPES,
     NOT_GIT_REPO,
     UNABLE_TO_DIFF,
@@ -22,8 +22,8 @@ object DiffDialogNotifier {
                 msg = "Specify both files to view diff"
                 title = "Select files"
             }
-            DiffMessageType.INVALID_TYPE -> {
-                msg = "We are able now to parse .java or .kt files"
+            DiffMessageType.UNSUPPORTED_TYPE -> {
+                msg = "Such files are not supported yet"
                 title = "Invalid file type"
             }
             DiffMessageType.DIFFERENT_TYPES -> {
