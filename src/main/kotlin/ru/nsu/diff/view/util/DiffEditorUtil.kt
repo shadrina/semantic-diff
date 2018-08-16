@@ -26,7 +26,6 @@ object DiffEditorUtil {
             val document = editorFactory.createDocument("Nothing to show...")
             editorFactory.createEditor(document)
         } else {
-            // TODO: create Formatter class
             val text = psiFile.text
             val document = editorFactory.createDocument(text)
             editorFactory.createEditor(document, project, psiFile.fileType, false)
@@ -84,8 +83,6 @@ object DiffEditorUtil {
     }
 
     fun paintEditor(editor: EditorEx, chunks: List<DiffChunk>, diffSide: DiffSide) {
-        fun JBColor.littleDarker() = JBColor { Color(this.red - 12, this.green - 12, this.blue - 12) }
-
         var textRange: TextRange?
         var color: JBColor
         var textAttributes: TextAttributes
@@ -109,7 +106,7 @@ object DiffEditorUtil {
             if (editor.document.getLineNumber(start) == editor.document.getLineNumber(stop) &&
                     (!DocumentUtil.isAtLineStart(start, editor.document)
                             || !DocumentUtil.isAtLineEnd(stop, editor.document))) {
-                val ta = TextAttributes(null, color.littleDarker(), null, null, 0)
+                val ta = TextAttributes(null, ColorFactory.selectionColor(color), null, null, 0)
                 editor.markupModel.addRangeHighlighter(
                         start,
                         stop,
