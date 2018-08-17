@@ -1,4 +1,4 @@
-#### 1. Matching parameters and arguments should be done directly after the parent's are matched
+#### 1. Matching parameters and arguments should be done directly after their parents are matched
 
 <img src=img/value-arguments.png width=900>
 
