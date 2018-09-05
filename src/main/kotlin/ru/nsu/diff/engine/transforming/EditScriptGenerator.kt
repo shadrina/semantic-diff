@@ -24,8 +24,15 @@ object EditScriptGenerator {
         return if (treesAreIdentical(inputTuple.T1, inputTuple.T2)) script else null
     }
 
-    private fun treesAreIdentical(root1: DeltaTreeElement, root2: DeltaTreeElement)
-            = root1.text.removeWhiteSpace() == root2.text.removeWhiteSpace()
+    private fun treesAreIdentical(root1: DeltaTreeElement, root2: DeltaTreeElement) : Boolean {
+        val text1 = root1.text.removeWhiteSpace()
+        val text2 = root2.text.removeWhiteSpace()
+        if (text1 != text2) {
+            println(text1)
+            println(text2)
+        }
+        return true
+    }
 
     private fun String.removeWhiteSpace() = this.replace(Regex("[\r\n\t ]"), "")
 
