@@ -1,7 +1,7 @@
 package ru.nsu.diff.view.util
 
 const val DIFF_DIALOG_WIDTH = 2000
-const val Diff_DIALOG_HEIGHT = 700
+const val Diff_DIALOG_HEIGHT = 600
 
 const val DIFF_VIEWER_WIDTH = (DIFF_DIALOG_WIDTH * 0.8).toInt()
 const val DIFF_VIEWER_HEIGHT = (Diff_DIALOG_HEIGHT * 0.6).toInt()
@@ -14,5 +14,6 @@ const val UPPER_PANEL_WIDTH = (DIFF_DIALOG_WIDTH * 0.8).toInt()
 const val UPPER_PANEL_HEIGHT = (Diff_DIALOG_HEIGHT * 0.18).toInt()
 
 const val NAVIGATION_PANEL_WIDTH = (UPPER_PANEL_WIDTH * 0.15).toInt()
-const val CHANGEABLE_PANEL_WIDTH = (UPPER_PANEL_WIDTH * 0.6).toInt()
+const val CHANGEABLE_PANEL_WIDTH = (UPPER_PANEL_WIDTH * 0.35).toInt()
+const val OPTIONS_PANEL_WIDTH = (UPPER_PANEL_WIDTH * 0.25).toInt()
 const val INFO_PANEL_WIDTH = (UPPER_PANEL_WIDTH * 0.25).toInt()

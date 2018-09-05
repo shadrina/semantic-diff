@@ -15,6 +15,7 @@ class UpperPanel(project: Project, viewerPanel: DiffViewerPanel) : JPanel(), Mod
     private val navigationPanel = NavigationPanel()
     private val selectFilesPanel = SelectFilesPanel(project, viewerPanel)
     private val browseGitRepoPanel = BrowseGitRepoPanel(project, viewerPanel)
+    private val optionsPanel = OptionsPanel(viewerPanel)
     private val infoPanel = InfoPanel()
 
     private var myMode = Mode.SELECT_FILES
@@ -31,6 +32,8 @@ class UpperPanel(project: Project, viewerPanel: DiffViewerPanel) : JPanel(), Mod
         gc.gridx = 1
         add(selectFilesPanel, gc)
         gc.gridx = 2
+        add(optionsPanel, gc)
+        gc.gridx = 3
         add(infoPanel, gc)
 
         viewerPanel.infoPanel = infoPanel

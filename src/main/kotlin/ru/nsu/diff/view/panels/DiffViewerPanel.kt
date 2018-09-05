@@ -51,6 +51,24 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
             clearHighlighting(DiffSide.LEFT)
         }
 
+    private lateinit var scrollSynchronizer: ScrollSynchronizer
+    var masterSide: DiffSide? = null
+        set(value) {
+            if (field !== null && value !== null && value != field && this::scrollSynchronizer.isInitialized) {
+                scrollSynchronizer.changeRoles()
+            }
+            else if (field !== null && value === null && this::scrollSynchronizer.isInitialized) {
+                scrollSynchronizer.off()
+            }
+            else if (field === null && value !== null) {
+                scrollSynchronizer =
+                        if (value == DiffSide.RIGHT) ScrollSynchronizer(rightEditor, leftEditor)
+                        else ScrollSynchronizer(leftEditor, rightEditor)
+                scrollSynchronizer.on()
+            }
+            field = value
+        }
+
     private lateinit var leftEditor: EditorEx
     private lateinit var rightEditor: EditorEx
 
