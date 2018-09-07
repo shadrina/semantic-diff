@@ -69,6 +69,23 @@ class DiffViewerPanel(private val project: Project) : JPanel() {
             field = value
         }
 
+    var lineNumbersOption = true
+        set(value) {
+            if (this::leftEditor.isInitialized && this::rightEditor.isInitialized) {
+                leftEditor.settings.isLineNumbersShown = value
+                rightEditor.settings.isLineNumbersShown = value
+            }
+            field = value
+        }
+    var softWrapsOption = false
+        set(value) {
+            if (this::leftEditor.isInitialized && this::rightEditor.isInitialized) {
+                leftEditor.settings.isUseSoftWraps = value
+                rightEditor.settings.isUseSoftWraps = value
+            }
+            field = value
+        }
+
     private lateinit var leftEditor: EditorEx
     private lateinit var rightEditor: EditorEx
 
