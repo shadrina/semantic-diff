@@ -21,7 +21,7 @@ class GutterLayerUI(
         private val side: DiffSide
 ) : LayerUI<JComponent>() {
     var chunks: List<DiffChunk> = listOf()
-    var currY: Int = 0
+    private var currY: Int = 0
 
     init {
         editor.scrollingModel.addVisibleAreaListener(
